@@ -45,60 +45,146 @@ st.set_page_config(page_title="Percepción ambiental · Medellín", layout="wide
 # ─────────────────────────────────────────────
 _STYLES = """
 <style>
-    /* Tipografía y densidad */
+    /* Sin scroll en página; alto del mapa = viewport − cabeceras − marco del mapa */
+    :root {
+        --app-streamlit-header: clamp(48px, 8vh, 64px);
+        --app-title-block: clamp(56px, 11vh, 96px);
+        --map-frame-gap: 10px;
+        --map-frame-pad: 12px;
+        --map-frame-radius: 20px;
+        --map-bottom-breathe: 14px;
+        --map-inner-height: calc(
+            100vh - var(--app-streamlit-header) - var(--app-title-block)
+            - var(--map-frame-gap) - (2 * var(--map-frame-pad)) - var(--map-bottom-breathe)
+        );
+    }
+    html, body {
+        overflow: hidden !important;
+        height: 100% !important;
+        margin: 0;
+    }
+    .stApp {
+        overflow: hidden !important;
+        max-height: 100vh !important;
+    }
+    [data-testid="stAppViewContainer"] {
+        overflow: hidden !important;
+        max-height: 100vh !important;
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: stretch !important;
+    }
+    [data-testid="stMain"] {
+        overflow: hidden !important;
+        max-height: 100vh !important;
+        flex: 1 1 auto !important;
+        min-height: 0 !important;
+        min-width: 0 !important;
+        background: radial-gradient(120% 80% at 50% -30%, rgba(45, 212, 191, 0.07), transparent 52%),
+                    linear-gradient(165deg, #f8fafc 0%, #f1f5f9 55%, #eef2f7 100%) !important;
+    }
+    section.main {
+        overflow: hidden !important;
+    }
+    section.main > div {
+        overflow-y: hidden !important;
+        overflow-x: hidden !important;
+        max-height: 100vh !important;
+    }
     .main .block-container {
-        padding-top: 1.25rem;
-        padding-bottom: 1rem;
-        max-width: 100%;
+        padding-top: 0.5rem !important;
+        padding-bottom: var(--map-bottom-breathe) !important;
+        padding-left: 0.5rem !important;
+        padding-right: 0.5rem !important;
+        margin-top: 0 !important;
+        margin-bottom: 0 !important;
+        max-width: 100% !important;
+        overflow: hidden !important;
+        max-height: 100vh !important;
     }
-    /* Cabecera compacta */
-    div.app-hero-wrap {
-        margin: 0 0 0.75rem 0;
-        padding: 0 0 0.65rem 0;
-        border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+    /* Cabecera compacta (título en zona principal) */
+    div.app-head-min {
+        margin: 0 0 var(--map-frame-gap) 0;
+        padding: 0 2px;
     }
-    div.app-hero-wrap .app-hero-title {
-        font-size: 1.35rem;
+    div.app-head-min .app-head-row {
+        display: flex;
+        align-items: baseline;
+        flex-wrap: wrap;
+        gap: 0.5rem 0.75rem;
+    }
+    div.app-head-min .app-head-title {
+        font-size: clamp(1.15rem, 2.4vw, 1.45rem);
         font-weight: 650;
-        letter-spacing: -0.02em;
+        letter-spacing: -0.03em;
         color: #0f172a;
         margin: 0;
-        line-height: 1.25;
+        line-height: 1.15;
     }
-    div.app-hero-wrap .app-hero-meta {
-        font-size: 0.85rem;
-        color: #64748b;
-        margin: 0.2rem 0 0 0;
-        font-weight: 450;
-    }
-    /* Sidebar: bloques más legibles */
-    [data-testid="stSidebar"] .block-container {
-        padding-top: 1.25rem;
-    }
-    [data-testid="stSidebar"] h2 {
-        font-size: 0.95rem;
+    div.app-head-min .app-head-pill {
+        font-size: 0.72rem;
         font-weight: 600;
-        color: #0f172a;
         text-transform: uppercase;
-        letter-spacing: 0.04em;
-        margin-bottom: 0.35rem;
+        letter-spacing: 0.06em;
+        color: #0d9488;
+        background: rgba(13, 148, 136, 0.12);
+        border: 1px solid rgba(13, 148, 136, 0.22);
+        border-radius: 999px;
+        padding: 0.2rem 0.65rem;
+        vertical-align: middle;
     }
-    /* Ayuda colapsable — menos ruido visual */
-    details.app-help > summary {
-        cursor: pointer;
-        font-size: 0.8rem;
-        color: #475569;
-        list-style: none;
-    }
-    details.app-help > summary::-webkit-details-marker { display: none; }
-    details.app-help[open] > summary { margin-bottom: 0.35rem; }
-    details.app-help .app-help-body {
+    div.app-head-min .app-head-sub {
         font-size: 0.8rem;
         color: #64748b;
-        line-height: 1.45;
-        margin: 0;
-        border-left: 2px solid #e2e8f0;
-        padding-left: 0.65rem;
+        margin: 0.35rem 0 0 0;
+        font-weight: 450;
+        letter-spacing: 0.01em;
+    }
+    /* Marco “coqueto” alrededor del mapa (streamlit-folium → iframe) */
+    .main [data-testid="element-container"]:has(iframe) {
+        background: rgba(255, 255, 255, 0.72) !important;
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border-radius: var(--map-frame-radius) !important;
+        padding: var(--map-frame-pad) !important;
+        border: 1px solid rgba(15, 23, 42, 0.08) !important;
+        box-shadow:
+            0 1px 0 rgba(255, 255, 255, 0.85) inset,
+            0 2px 6px rgba(15, 23, 42, 0.04),
+            0 18px 48px -18px rgba(15, 23, 42, 0.22) !important;
+        overflow: hidden !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+    }
+    /* Pie de página Streamlit */
+    [data-testid="stFooter"],
+    [data-testid="stFooter"] > div {
+        display: none !important;
+        visibility: hidden !important;
+        height: 0 !important;
+        min-height: 0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    .main iframe {
+        width: 100% !important;
+        display: block !important;
+        height: var(--map-inner-height) !important;
+        min-height: var(--map-inner-height) !important;
+        max-height: var(--map-inner-height) !important;
+        border: none !important;
+        border-radius: calc(var(--map-frame-radius) - 6px) !important;
+        box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.05) inset;
+    }
+    /* Sidebar */
+    [data-testid="stSidebar"] > div:first-child {
+        overflow-y: auto !important;
+        max-height: 100vh !important;
+        background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%) !important;
+    }
+    [data-testid="stSidebar"] .block-container {
+        padding-top: 0.75rem !important;
+        padding-bottom: 1rem !important;
     }
     [data-testid="stSidebar"] h1,
     [data-testid="stSidebar"] h2,
@@ -108,12 +194,6 @@ _STYLES = """
     [data-testid="stSidebar"] h6 {
         color: #0f172a;
         font-weight: 600;
-    }
-    /* Hint bajo el mapa */
-    p.app-map-hint {
-        font-size: 0.78rem;
-        color: #64748b;
-        margin: 0.35rem 0 0 0;
     }
 </style>
 """
@@ -332,27 +412,12 @@ def generar_popup_html(df_local, nombre_zona, variable_activa):
 # ─────────────────────────────────────────────
 # UI PRINCIPAL Y SIDEBAR
 # ─────────────────────────────────────────────
-st.markdown(
-    """
-    <div class="app-hero-wrap">
-        <p class="app-hero-title">Mapa de percepción ambiental</p>
-        <p class="app-hero-meta">Medellín · Encuesta de Condiciones de Vida (estrato y variables seleccionables)</p>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
-
-st.markdown(
-    """
-    <details class="app-help">
-        <summary>Uso del mapa</summary>
-        <p class="app-help-body">
-            Toca una <strong>comuna</strong> para ver sus barrios; en esa vista, toca un <strong>barrio</strong> para abrir el detalle con gráficas en el mapa.
-        </p>
-    </details>
-    """,
-    unsafe_allow_html=True,
-)
+st.sidebar.caption("Ajustes")
+with st.sidebar.expander("Uso del mapa"):
+    st.markdown(
+        "Toca una **comuna** para ver sus barrios; en esa vista, toca un **barrio** "
+        "para abrir el detalle con gráficas."
+    )
 
 st.sidebar.markdown("##### Filtros")
 estratos = st.sidebar.multiselect(
@@ -385,6 +450,19 @@ if st.session_state["barrio_click"]:
         st.rerun()
 
 df = df_base[df_base["11. Estrato"].isin(estratos)].copy()
+
+st.markdown(
+    """
+    <div class="app-head-min">
+        <div class="app-head-row">
+            <span class="app-head-title">Percepción ambiental</span>
+            <span class="app-head-pill">Medellín</span>
+        </div>
+        <p class="app-head-sub">Mapa interactivo · ECV · Comuna → barrio para ver detalle</p>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
 # ─────────────────────────────────────────────
 # MAPA JERÁRQUICO
@@ -536,14 +614,9 @@ mapa.get_root().html.add_child(folium.Element(leyenda))
 mapa_data = st_folium(
     mapa,
     use_container_width=True,
-    height=750,
+    height=1080,
     returned_objects=["last_active_drawing"],
-    key="mapa_medellin"
-)
-
-st.markdown(
-    '<p class="app-map-hint">Colores según la leyenda del mapa · Acerca con la rueda o los botones +/−</p>',
-    unsafe_allow_html=True,
+    key="mapa_medellin",
 )
 
 # 5. Manejo de Clicks
