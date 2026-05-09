@@ -5,8 +5,38 @@ import requests
 import unicodedata
 import re
 import folium
+from branca.element import MacroElement
+from folium.template import Template
 from streamlit_folium import st_folium
 from difflib import get_close_matches
+
+
+class FitBoundsYLimiteZoomSalida(MacroElement):
+    """fitBounds al bbox y luego minZoom = zoom actual (sin zoom out más allá de lo relevante)."""
+
+    _template = Template(
+        """
+        {% macro script(this, kwargs) %}
+        (function () {
+            var m = {{ this._parent.get_name() }};
+            var b = {{ this.bounds|tojson }};
+            m.fitBounds(b, {
+                padding: [{{ this.pad_px }}, {{ this.pad_px }}],
+                maxZoom: {{ this.max_zoom }},
+                animate: false
+            });
+            m.setMinZoom(m.getZoom());
+        })();
+        {% endmacro %}
+        """
+    )
+
+    def __init__(self, bounds, pad_px=12, max_zoom=18):
+        super().__init__()
+        self._name = "FitBoundsYLimiteZoomSalida"
+        self.bounds = bounds
+        self.pad_px = int(pad_px)
+        self.max_zoom = int(max_zoom)
 
 st.set_page_config(page_title="Dashboard Ambiental Medellín", layout="wide")
 
@@ -59,6 +89,38 @@ def centroide_feature(feat):
         lat = sum(p[1] for p in pts) / len(pts)
         return [lat, lng]
     except Exception: return None
+
+def bounds_from_features(features):
+    """[[lat_sur_oeste, lng_sur_oeste], [lat_nor_este, lng_nor_este]] para fit_bounds."""
+    min_lat, max_lat = 90.0, -90.0
+    min_lng, max_lng = 180.0, -180.0
+    hay = False
+    for f in features:
+        geom = f.get("geometry") or {}
+        gtype = geom.get("type")
+        coords = geom.get("coordinates")
+        if not coords:
+            continue
+        puntos = []
+        if gtype == "Polygon":
+            for anillo in coords:
+                puntos.extend(anillo)
+        elif gtype == "MultiPolygon":
+            for poligono in coords:
+                for anillo in poligono:
+                    puntos.extend(anillo)
+        else:
+            continue
+        for p in puntos:
+            if len(p) < 2:
+                continue
+            lng, lat = float(p[0]), float(p[1])
+            min_lat, max_lat = min(min_lat, lat), max(max_lat, lat)
+            min_lng, max_lng = min(min_lng, lng), max(max_lng, lng)
+            hay = True
+    if not hay:
+        return None
+    return [[min_lat, min_lng], [max_lat, max_lng]]
 
 # ─────────────────────────────────────────────
 # CARGA DE DATOS
@@ -266,8 +328,6 @@ def estilo(feature):
     return {"fillColor": color, "color": "#333333", "weight": peso_borde, "fillOpacity": 0.7}
 
 # 2. Construir Mapa
-mapa = folium.Map(location=st.session_state["map_center"], zoom_start=st.session_state["map_zoom"], tiles="CartoDB positron")
-
 features_mostrar = []
 for f in geojson.get("features", []):
     if modo == "comunas":
@@ -277,6 +337,33 @@ for f in geojson.get("features", []):
             features_mostrar.append(f)
 
 geo_filtrado = {"type": "FeatureCollection", "features": features_mostrar}
+
+bbox_capa = bounds_from_features(features_mostrar) if features_mostrar else None
+
+if bbox_capa:
+    mn_lat, mn_lng = bbox_capa[0]
+    mx_lat, mx_lng = bbox_capa[1]
+    lat_pad = max((mx_lat - mn_lat) * 0.02, 0.002)
+    lng_pad = max((mx_lng - mn_lng) * 0.02, 0.002)
+    centro_lat = (mn_lat + mx_lat) / 2
+    centro_lng = (mn_lng + mx_lng) / 2
+    mapa = folium.Map(
+        location=[centro_lat, centro_lng],
+        zoom_start=st.session_state["map_zoom"],
+        tiles="CartoDB positron",
+        max_bounds=True,
+        min_lat=mn_lat - lat_pad,
+        max_lat=mx_lat + lat_pad,
+        min_lon=mn_lng - lng_pad,
+        max_lon=mx_lng + lng_pad,
+        max_bounds_viscosity=1.0,
+    )
+else:
+    mapa = folium.Map(
+        location=st.session_state["map_center"],
+        zoom_start=st.session_state["map_zoom"],
+        tiles="CartoDB positron",
+    )
 
 if features_mostrar:
     if modo == "comunas":
@@ -310,6 +397,9 @@ if st.session_state["barrio_click"] and modo == "barrios":
                     popup=popup
                 ).add_to(mapa)
             break
+
+if bbox_capa:
+    FitBoundsYLimiteZoomSalida(bbox_capa, pad_px=12, max_zoom=18).add_to(mapa)
 
 if variable_select == "Todas":
     leyenda = """<div style="position:fixed; bottom:30px; right:30px; background:white; padding:10px; border-radius:5px; z-index:999; box-shadow:2px 2px 5px rgba(0,0,0,0.3);">
