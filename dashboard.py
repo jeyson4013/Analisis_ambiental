@@ -38,7 +38,90 @@ class FitBoundsYLimiteZoomSalida(MacroElement):
         self.pad_px = int(pad_px)
         self.max_zoom = int(max_zoom)
 
-st.set_page_config(page_title="Dashboard Ambiental Medellín", layout="wide")
+st.set_page_config(page_title="Percepción ambiental · Medellín", layout="wide", initial_sidebar_state="expanded")
+
+# ─────────────────────────────────────────────
+# ESTILOS (UI general)
+# ─────────────────────────────────────────────
+_STYLES = """
+<style>
+    /* Tipografía y densidad */
+    .main .block-container {
+        padding-top: 1.25rem;
+        padding-bottom: 1rem;
+        max-width: 100%;
+    }
+    /* Cabecera compacta */
+    div.app-hero-wrap {
+        margin: 0 0 0.75rem 0;
+        padding: 0 0 0.65rem 0;
+        border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+    }
+    div.app-hero-wrap .app-hero-title {
+        font-size: 1.35rem;
+        font-weight: 650;
+        letter-spacing: -0.02em;
+        color: #0f172a;
+        margin: 0;
+        line-height: 1.25;
+    }
+    div.app-hero-wrap .app-hero-meta {
+        font-size: 0.85rem;
+        color: #64748b;
+        margin: 0.2rem 0 0 0;
+        font-weight: 450;
+    }
+    /* Sidebar: bloques más legibles */
+    [data-testid="stSidebar"] .block-container {
+        padding-top: 1.25rem;
+    }
+    [data-testid="stSidebar"] h2 {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #0f172a;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-bottom: 0.35rem;
+    }
+    /* Ayuda colapsable — menos ruido visual */
+    details.app-help > summary {
+        cursor: pointer;
+        font-size: 0.8rem;
+        color: #475569;
+        list-style: none;
+    }
+    details.app-help > summary::-webkit-details-marker { display: none; }
+    details.app-help[open] > summary { margin-bottom: 0.35rem; }
+    details.app-help .app-help-body {
+        font-size: 0.8rem;
+        color: #64748b;
+        line-height: 1.45;
+        margin: 0;
+        border-left: 2px solid #e2e8f0;
+        padding-left: 0.65rem;
+    }
+    [data-testid="stSidebar"] h1,
+    [data-testid="stSidebar"] h2,
+    [data-testid="stSidebar"] h3,
+    [data-testid="stSidebar"] h4,
+    [data-testid="stSidebar"] h5,
+    [data-testid="stSidebar"] h6 {
+        color: #0f172a;
+        font-weight: 600;
+    }
+    /* Hint bajo el mapa */
+    p.app-map-hint {
+        font-size: 0.78rem;
+        color: #64748b;
+        margin: 0.35rem 0 0 0;
+    }
+</style>
+"""
+
+
+def aplicar_estilos_globales():
+    st.markdown(_STYLES, unsafe_allow_html=True)
+
 
 # ─────────────────────────────────────────────
 # SESSION STATE
@@ -51,6 +134,8 @@ if "map_center" not in st.session_state:
     st.session_state["map_center"] = [6.2442, -75.5812]
 if "map_zoom" not in st.session_state:
     st.session_state["map_zoom"] = 12
+
+aplicar_estilos_globales()
 
 # ─────────────────────────────────────────────
 # FUNCIONES AUXILIARES
@@ -247,22 +332,46 @@ def generar_popup_html(df_local, nombre_zona, variable_activa):
 # ─────────────────────────────────────────────
 # UI PRINCIPAL Y SIDEBAR
 # ─────────────────────────────────────────────
-st.title("Dashboard Ambiental - Medellín")
-st.markdown("Explora el mapa interactivo. **Haz click en una comuna** para ver sus barrios, y luego **haz click en un barrio** para ver sus gráficas detalladas.")
-
-st.sidebar.header("Filtros Globales")
-estratos = st.sidebar.multiselect(
-    "Selecciona Estrato",
-    options=sorted(df_base["11. Estrato"].unique()),
-    default=sorted(df_base["11. Estrato"].unique()),
+st.markdown(
+    """
+    <div class="app-hero-wrap">
+        <p class="app-hero-title">Mapa de percepción ambiental</p>
+        <p class="app-hero-meta">Medellín · Encuesta de Condiciones de Vida (estrato y variables seleccionables)</p>
+    </div>
+    """,
+    unsafe_allow_html=True,
 )
 
-variable_select = st.sidebar.selectbox("Filtro: Variable a visualizar", ["Todas"] + variables)
+st.markdown(
+    """
+    <details class="app-help">
+        <summary>Uso del mapa</summary>
+        <p class="app-help-body">
+            Toca una <strong>comuna</strong> para ver sus barrios; en esa vista, toca un <strong>barrio</strong> para abrir el detalle con gráficas en el mapa.
+        </p>
+    </details>
+    """,
+    unsafe_allow_html=True,
+)
+
+st.sidebar.markdown("##### Filtros")
+estratos = st.sidebar.multiselect(
+    "Estratos",
+    options=sorted(df_base["11. Estrato"].unique()),
+    default=sorted(df_base["11. Estrato"].unique()),
+    help="Solo se incluyen encuestas de estos estratos en el mapa y en los cálculos.",
+)
+
+variable_select = st.sidebar.selectbox(
+    "Variable en el mapa",
+    ["Todas"] + variables,
+    help="“Todas” colorea por estrato medio; al elegir una variable, el mapa muestra % de percepción negativa.",
+)
 
 if st.session_state["comuna_click"]:
     st.sidebar.markdown("---")
-    st.sidebar.success(f"📍 **Comuna:** {st.session_state['comuna_click']}")
-    if st.sidebar.button("⬅️ Volver a todas las Comunas", use_container_width=True):
+    st.sidebar.success(f"**Comuna:** {st.session_state['comuna_click']}")
+    if st.sidebar.button("Ver todas las comunas", use_container_width=True):
         st.session_state["comuna_click"] = None
         st.session_state["barrio_click"] = None
         st.session_state["map_center"] = [6.2442, -75.5812]
@@ -270,8 +379,8 @@ if st.session_state["comuna_click"]:
         st.rerun()
 
 if st.session_state["barrio_click"]:
-    st.sidebar.info(f"🏡 **Barrio:** {st.session_state['barrio_click']}")
-    if st.sidebar.button("❌ Quitar selección de Barrio", use_container_width=True):
+    st.sidebar.info(f"**Barrio:** {st.session_state['barrio_click']}")
+    if st.sidebar.button("Quitar barrio", use_container_width=True):
         st.session_state["barrio_click"] = None
         st.rerun()
 
@@ -401,19 +510,25 @@ if st.session_state["barrio_click"] and modo == "barrios":
 if bbox_capa:
     FitBoundsYLimiteZoomSalida(bbox_capa, pad_px=12, max_zoom=18).add_to(mapa)
 
+_LEYENDA_BOX = (
+    "position:fixed;bottom:28px;right:28px;z-index:999;"
+    "background:#fff;border:1px solid rgba(15,23,42,0.08);border-radius:10px;"
+    "padding:12px 14px;font-family:system-ui,-apple-system,sans-serif;font-size:12px;color:#334155;"
+    "box-shadow:0 4px 14px rgba(15,23,42,0.08);line-height:1.45;"
+)
 if variable_select == "Todas":
-    leyenda = """<div style="position:fixed; bottom:30px; right:30px; background:white; padding:10px; border-radius:5px; z-index:999; box-shadow:2px 2px 5px rgba(0,0,0,0.3);">
-    <b>Estrato Promedio</b><br>
+    leyenda = f"""<div style="{_LEYENDA_BOX}">
+    <strong style="color:#0f172a;">Estrato medio</strong><br>
     <span style='color:#e74c3c'>■</span> 1 <span style='color:#e67e22'>■</span> 2 <span style='color:#f1c40f'>■</span> 3 <br>
     <span style='color:#2ecc71'>■</span> 4 <span style='color:#3498db'>■</span> 5 <span style='color:#9b59b6'>■</span> 6
     </div>"""
 else:
-    leyenda = """<div style="position:fixed; bottom:30px; right:30px; background:white; padding:10px; border-radius:5px; z-index:999; box-shadow:2px 2px 5px rgba(0,0,0,0.3);">
-    <b>% Percepción Negativa</b><br>
-    <span style='color:#2ecc71'>■</span> < 10% (Bajo)<br>
-    <span style='color:#f1c40f'>■</span> 10% - 25% (Medio)<br>
-    <span style='color:#e67e22'>■</span> 25% - 50% (Alto)<br>
-    <span style='color:#e74c3c'>■</span> > 50% (Crítico)
+    leyenda = f"""<div style="{_LEYENDA_BOX}">
+    <strong style="color:#0f172a;">% percepción negativa</strong><br>
+    <span style='color:#2ecc71'>■</span> &lt; 10%<br>
+    <span style='color:#f1c40f'>■</span> 10–25%<br>
+    <span style='color:#e67e22'>■</span> 25–50%<br>
+    <span style='color:#e74c3c'>■</span> &gt; 50%
     </div>"""
 mapa.get_root().html.add_child(folium.Element(leyenda))
 
@@ -424,6 +539,11 @@ mapa_data = st_folium(
     height=750,
     returned_objects=["last_active_drawing"],
     key="mapa_medellin"
+)
+
+st.markdown(
+    '<p class="app-map-hint">Colores según la leyenda del mapa · Acerca con la rueda o los botones +/−</p>',
+    unsafe_allow_html=True,
 )
 
 # 5. Manejo de Clicks
@@ -455,6 +575,3 @@ if mapa_data and mapa_data.get("last_active_drawing"):
             if nombre_final and nombre_final != st.session_state["barrio_click"]:
                 st.session_state["barrio_click"] = nombre_final
                 st.rerun()
-
-# Espacio extra para que el mapa resalte bien
-st.markdown("<br><br>", unsafe_allow_html=True)
