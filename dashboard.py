@@ -7,6 +7,7 @@ import re
 import folium
 from branca.element import MacroElement
 from folium.template import Template
+import json
 from streamlit_folium import st_folium
 from difflib import get_close_matches
 
@@ -159,24 +160,32 @@ def render_variable_btns(opciones, val_actual, key_prefix, state_key):
 def cargar_datos():
     df = pd.read_excel("ECV_2025_Limpio.xlsx")
     df = df[df["4. Ubicación geográfica - Municipio"].str.contains("Medell", na=False)]
+    
+    # Ajuste de nombres conocidos para compatibilidad con el mapa
+    df["6. Comuna o Corregimiento"] = df["6. Comuna o Corregimiento"].replace({
+        "LAURELES": "LAURELES ESTADIO",
+        "Laureles": "LAURELES ESTADIO"
+    })
+    
     df["barrio"] = df["7. Barrio o Vereda"].fillna("Sin información")
     df["comuna"] = df["6. Comuna o Corregimiento"].fillna("Sin información")
     return df
 
 @st.cache_data(show_spinner="Cargando GeoJSON...")
 def cargar_geojson():
-    url = "https://cdn.jsdelivr.net/gh/juanfrans/estratosBogota@master/EstratosMedellin.geojson"
+    import json
     try:
-        r = requests.get(url, timeout=15)
-        r.raise_for_status()
-        geojson = r.json()
-    except:
+        with open("medellin_debug.geojson", "r", encoding="utf-8") as f:
+            geojson = json.load(f)
+    except Exception as e:
+        st.error(f"Error cargando GeoJSON local: {e}")
         return {"type": "FeatureCollection", "features": []}
     for f in geojson.get("features", []):
         props = f["properties"]
         props["barrio_limpio"] = limpiar(props.get("NOMBRE", ""))
         c_raw = props.get("Comuna")
         if c_raw:
+            # Eliminar prefijo 'COMUNA X ' si existe
             props["comuna_limpia"] = re.sub(r'COMUNA \d+ ', '', limpiar(c_raw))
         else:
             props["comuna_limpia"] = "SIN INFORMACION"
@@ -185,15 +194,45 @@ def cargar_geojson():
 df_base = cargar_datos()
 geojson = cargar_geojson()
 
+# Crear un mapeo jerárquico: (Comuna Limpia, Barrio Limpio) -> Comuna Original del DF
+mapeo_jerarquico = {}
+# Crear mapeo jerárquico para nombres de barrios: (Comuna Limpia, Barrio Limpio) -> Barrio Original
+mapeo_barrios = {}
+
+for _, row in df_base.iterrows():
+    c_lim = limpiar(row["comuna"])
+    b_lim = limpiar(row["barrio"])
+    k = (c_lim, b_lim)
+    if k not in mapeo_jerarquico:
+        mapeo_jerarquico[k] = row["comuna"]
+    if k not in mapeo_barrios:
+        mapeo_barrios[k] = row["barrio"]
+
 comunas_df_lista = df_base["comuna"].dropna().unique().tolist()
 comunas_df_norm = {limpiar(c): c for c in comunas_df_lista}
 barrios_df_lista = df_base["barrio"].dropna().unique().tolist()
 barrios_df_norm = {limpiar(b): b for b in barrios_df_lista}
 
 for f in geojson.get("features", []):
-    c_limpia = f["properties"].get("comuna_limpia")
-    mejor_c = encontrar_mejor_match(c_limpia, list(comunas_df_norm.keys()), cutoff=0.5)
-    f["properties"]["comuna_df"] = comunas_df_norm.get(mejor_c) if mejor_c else None
+    props = f["properties"]
+    b_limpio = props.get("barrio_limpio")
+    c_limpia = props.get("comuna_limpia")
+    
+    # Intentar match jerárquico exacto primero
+    llave = (c_limpia, b_limpio)
+    if llave in mapeo_jerarquico:
+        props["comuna_df"] = mapeo_jerarquico[llave]
+    else:
+        # Si no hay match exacto, buscar el mejor barrio dentro de ESA comuna
+        barrios_en_esta_comuna = [b for (c, b) in mapeo_jerarquico.keys() if c == c_limpia]
+        mejor_b = encontrar_mejor_match(b_limpio, barrios_en_esta_comuna, cutoff=0.7)
+        
+        if mejor_b:
+            props["comuna_df"] = mapeo_jerarquico[(c_limpia, mejor_b)]
+        else:
+            # Último recurso: match de comuna
+            mejor_c = encontrar_mejor_match(c_limpia, list(comunas_df_norm.keys()), cutoff=0.5)
+            props["comuna_df"] = comunas_df_norm.get(mejor_c) if mejor_c else "Sin información"
 
 variables = ["Aire", "Ríos", "Ruido", "Basuras", "Contaminación Visual"]
 opciones_vars = ["Todas"] + variables
@@ -218,21 +257,65 @@ def generar_popup_html(df_local, nombre_zona, variable_activa):
         df_plot1 = pd.DataFrame(resultados).sort_values("Porcentaje Negativo", ascending=True)
         fig1 = px.bar(df_plot1, x="Porcentaje Negativo", y="Variable", orientation='h',
                       title="1. Top Problemas (Percepción Negativa %)",
-                      color="Porcentaje Negativo", color_continuous_scale="Reds")
-        fig1.update_layout(margin=dict(l=0,r=0,t=40,b=0), height=200, coloraxis_showscale=False)
+                      color="Porcentaje Negativo", color_continuous_scale="Reds",
+                      text="Porcentaje Negativo")
+        fig1.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
+        fig1.update_layout(
+            margin=dict(l=10, r=60, t=45, b=10),
+            height=220,
+            coloraxis_showscale=False,
+            xaxis=dict(title="% Negativo", ticksuffix="%", showgrid=True, gridcolor="#eee"),
+            yaxis=dict(title=""),
+            font=dict(size=11)
+        )
         html_g1 = fig1.to_html(full_html=False, include_plotlyjs='cdn')
     df_long = df_local.melt(id_vars=["11. Estrato"], value_vars=vars_mostrar, var_name="Variable", value_name="Valor")
     df_long["categoria"] = df_long["Valor"].apply(map_categoria)
-    df_plot2 = df_long.groupby(["11. Estrato", "categoria"]).size().reset_index(name="count")
+    # Convertir estrato a string legible
+    df_long["Estrato"] = df_long["11. Estrato"].apply(lambda x: f"Estrato {int(x)}" if pd.notna(x) and str(x).isdigit() else str(x))
+    df_plot2 = df_long.groupby(["Estrato", "categoria"]).size().reset_index(name="count")
     html_g2 = ""
     if not df_plot2.empty:
-        df_plot2["total"] = df_plot2.groupby("11. Estrato")["count"].transform("sum")
-        df_plot2["Pct"] = ((df_plot2["count"] / df_plot2["total"]) * 100).round(0)
-        fig2 = px.bar(df_plot2, x="11. Estrato", y="Pct", color="categoria", barmode="stack",
-                      title="2. Percepción por Estrato",
-                      color_discrete_map={"Muy buena":"#2ecc71","Buena":"#27ae60","Aceptable":"#f1c40f","Mala":"#e67e22","Muy mala":"#e74c3c","No sabe":"#bdc3c7"},
-                      category_orders={"categoria":["Muy buena","Buena","Aceptable","Mala","Muy mala","No sabe"]})
-        fig2.update_layout(margin=dict(l=0,r=0,t=40,b=0), height=250)
+        df_plot2["total"] = df_plot2.groupby("Estrato")["count"].transform("sum")
+        df_plot2["Pct"] = ((df_plot2["count"] / df_plot2["total"]) * 100).round(1)
+        
+        cat_order = ["Muy buena", "Buena", "Aceptable", "Mala", "Muy mala", "No sabe"]
+        color_map = {
+            "Muy buena": "#2ecc71", "Buena": "#27ae60",
+            "Aceptable": "#f1c40f", "Mala": "#e67e22",
+            "Muy mala": "#e74c3c", "No sabe": "#bdc3c7"
+        }
+        
+        # Ordenar estratos numéricamente
+        estratos_order = sorted(df_plot2["Estrato"].unique(), key=lambda x: int(x.split()[-1]) if x.split()[-1].isdigit() else 99)
+        
+        fig2 = px.bar(
+            df_plot2, x="Estrato", y="Pct",
+            color="categoria", barmode="stack",
+            title="2. Percepción por Estrato",
+            color_discrete_map=color_map,
+            category_orders={"categoria": cat_order, "Estrato": estratos_order},
+            text="Pct"
+        )
+        fig2.update_traces(
+            texttemplate='%{text:.0f}%',
+            textposition='inside',
+            insidetextanchor='middle',
+            textfont=dict(size=10, color='white')
+        )
+        fig2.update_layout(
+            margin=dict(l=10, r=10, t=45, b=60),
+            height=300,
+            xaxis=dict(title="Estrato", tickangle=0),
+            yaxis=dict(title="Porcentaje (%)", ticksuffix="%", range=[0, 105]),
+            legend=dict(
+                orientation="h", yanchor="bottom", y=-0.45,
+                xanchor="center", x=0.5,
+                title="", font=dict(size=10)
+            ),
+            font=dict(size=11),
+            bargap=0.25
+        )
         html_g2 = fig2.to_html(full_html=False, include_plotlyjs=False)
     df_pie = df_long["categoria"].value_counts().reset_index()
     df_pie.columns = ["categoria", "count"]
@@ -241,15 +324,31 @@ def generar_popup_html(df_local, nombre_zona, variable_activa):
         fig3 = px.pie(df_pie, values="count", names="categoria",
                       title="3. Distribución (" + variable_activa + ")",
                       color="categoria",
-                      color_discrete_map={"Muy buena":"#2ecc71","Buena":"#27ae60","Aceptable":"#f1c40f","Mala":"#e67e22","Muy mala":"#e74c3c","No sabe":"#bdc3c7"})
-        fig3.update_traces(textposition='inside', textinfo='percent+label')
-        fig3.update_layout(margin=dict(l=0,r=0,t=40,b=0), height=250, showlegend=False)
+                      color_discrete_map={
+                          "Muy buena": "#2ecc71", "Buena": "#27ae60",
+                          "Aceptable": "#f1c40f", "Mala": "#e67e22",
+                          "Muy mala": "#e74c3c", "No sabe": "#bdc3c7"
+                      })
+        fig3.update_traces(textposition='inside', textinfo='percent+label', textfont=dict(size=11))
+        fig3.update_layout(
+            margin=dict(l=10, r=10, t=45, b=10),
+            height=270,
+            showlegend=False,
+            font=dict(size=11)
+        )
         html_g3 = fig3.to_html(full_html=False, include_plotlyjs=False)
-    return (
-        "<div style='width:500px;height:500px;overflow-y:scroll;overflow-x:hidden;font-family:sans-serif;padding:5px;box-sizing:border-box;'>"
-        "<h3 style='margin-top:0;text-align:center;color:#2c3e50;position:sticky;top:0;background:white;z-index:10;padding-bottom:10px;border-bottom:1px solid #ccc;'>"
-        + nombre_zona + "</h3>" + html_g1 + "<div style='height:15px;'></div>" + html_g2 + "<div style='height:15px;'></div>" + html_g3 + "</div>"
-    )
+        
+    html = f"""
+    <div style="width: 500px; height: 550px; overflow-y: scroll; overflow-x: hidden; font-family: sans-serif; padding: 5px; box-sizing: border-box;">
+        <h3 style="margin-top:0; text-align:center; color:#2c3e50; position: sticky; top: 0; background: white; z-index: 10; padding-bottom: 10px; border-bottom: 1px solid #ccc;">{nombre_zona}</h3>
+        {html_g1}
+        <div style="height: 10px;"></div>
+        {html_g2}
+        <div style="height: 10px;"></div>
+        {html_g3}
+    </div>
+    """
+    return html
 
 # ── TÍTULO ──
 st.title("🌿 Dashboard Ambiental - Medellín")
@@ -378,11 +477,16 @@ def estilo(feature):
         return {"fillColor": color, "color": "#ffffff", "weight": 1, "fillOpacity": 0.75}
 
 features_mostrar = []
+comuna_click_limpia = limpiar(st.session_state["comuna_click"]) if st.session_state["comuna_click"] else None
 for f in geojson.get("features", []):
     if modo == "comunas":
         features_mostrar.append(f)
-    elif f["properties"].get("comuna_df") == st.session_state["comuna_click"]:
-        features_mostrar.append(f)
+    else:
+        # Comparar con limpiar() para evitar diferencias de mayúsculas
+        comuna_df_limpia = limpiar(f["properties"].get("comuna_df", ""))
+        c_limpia_geo = limpiar(f["properties"].get("comuna_limpia", ""))
+        if comuna_df_limpia == comuna_click_limpia or c_limpia_geo == comuna_click_limpia:
+            features_mostrar.append(f)
 
 geo_filtrado = {"type": "FeatureCollection", "features": features_mostrar}
 
@@ -426,8 +530,16 @@ if st.session_state["barrio_click"] and modo == "barrios":
         if f["properties"].get("barrio_limpio") == b_limpio:
             centroid = centroide_feature(f)
             if centroid:
-                df_popup = df_base[df_base["barrio"] == st.session_state["barrio_click"]]
-                html_popup = generar_popup_html(df_popup, st.session_state["barrio_click"], variable_select)
+                # Filtrar por BARRIO Y COMUNA para evitar mezcla de datos entre comunas
+                comuna_actual = st.session_state["comuna_click"]
+                df_popup = df[
+                    (df["barrio"] == st.session_state["barrio_click"]) &
+                    (df["comuna"].apply(limpiar) == limpiar(comuna_actual))
+                ]
+                # Si no hay datos con el filtro estricto, relajar al barrio solo
+                if df_popup.empty:
+                    df_popup = df[df["barrio"] == st.session_state["barrio_click"]]
+                html_popup = generar_popup_html(df_popup, f"{st.session_state['barrio_click']} ({comuna_actual})", variable_select)
                 iframe = folium.IFrame(html=html_popup, width=540, height=540)
                 folium.Marker(location=centroid, icon=folium.Icon(color="red", icon="info-sign"),
                               popup=folium.Popup(iframe, max_width=550)).add_to(mapa)
@@ -471,9 +583,22 @@ if mapa_data and mapa_data.get("last_active_drawing"):
             st.rerun()
     elif modo == "barrios":
         b_limpio = props.get("barrio_limpio")
+        c_limpia = props.get("comuna_limpia")
         if b_limpio:
-            match = encontrar_mejor_match(b_limpio, list(barrios_df_norm.keys()))
-            nombre_final = barrios_df_norm.get(match)
+            # Buscar el nombre original del barrio dentro de la comuna actual
+            key = (c_limpia, b_limpio)
+            if key in mapeo_barrios:
+                nombre_final = mapeo_barrios[key]
+            else:
+                # Fuzzy match SOLO dentro de la misma comuna del GeoJSON
+                barrios_en_esta_comuna = [b for (c, b) in mapeo_barrios.keys() if c == c_limpia]
+                if barrios_en_esta_comuna:
+                    match = encontrar_mejor_match(b_limpio, barrios_en_esta_comuna)
+                    nombre_final = mapeo_barrios.get((c_limpia, match)) if match else None
+                else:
+                    # Si no hay barrios de esa comuna en el Excel, usar nombre del GeoJSON
+                    nombre_final = props.get("NOMBRE", b_limpio)
+                
             if nombre_final and nombre_final != st.session_state["barrio_click"]:
                 st.session_state["barrio_click"] = nombre_final
                 st.rerun()
