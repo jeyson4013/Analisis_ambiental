@@ -567,15 +567,12 @@ if st.session_state["comuna_click"]:
             unsafe_allow_html=True,
         )
         st.sidebar.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
-        bc1, bc2 = st.sidebar.columns(2)
-        with bc1:
-            if st.button("❌ Quitar", key="sb_quitar_barrio", use_container_width=True):
-                st.session_state["barrio_click"] = None
-                st.rerun()
-        with bc2:
-            if st.button("📊 Estadísticas", key="btn_abrir_modal_stats", use_container_width=True):
-                st.session_state["_abrir_modal_barrio"] = True
-                st.rerun()
+        if st.sidebar.button("❌ Quitar", key="sb_quitar_barrio", use_container_width=True):
+            st.session_state["barrio_click"] = None
+            st.rerun()
+        if st.sidebar.button("📊 Estadísticas", key="btn_abrir_modal_stats", use_container_width=True):
+            st.session_state["_abrir_modal_barrio"] = True
+            st.rerun()
 
 if st.session_state["comuna_click"] is None:
     _sidebar_seccion("Referencia de comunas")
