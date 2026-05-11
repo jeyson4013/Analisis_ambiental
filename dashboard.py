@@ -1,3 +1,4 @@
+import html
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -70,6 +71,8 @@ if "variable_comuna" not in st.session_state:
     st.session_state["variable_comuna"] = "Todas"
 if "variable_global_val" not in st.session_state:
     st.session_state["variable_global_val"] = "Todas"
+if "_abrir_modal_barrio" not in st.session_state:
+    st.session_state["_abrir_modal_barrio"] = False
 
 def limpiar(texto):
     if not texto: return ""
@@ -240,9 +243,24 @@ opciones_vars = ["Todas"] + variables
 comunas_unicas = sorted([c for c in comunas_df_lista if c != "Sin información"])
 color_por_comuna = {c: COLORES_COMUNAS[i % len(COLORES_COMUNAS)] for i, c in enumerate(comunas_unicas)}
 
-def generar_popup_html(df_local, nombre_zona, variable_activa):
+COLOR_MAP_CATEG = {
+    "Muy buena": "#2ecc71",
+    "Buena": "#27ae60",
+    "Aceptable": "#f1c40f",
+    "Mala": "#e67e22",
+    "Muy mala": "#e74c3c",
+    "No sabe": "#bdc3c7",
+}
+CAT_ORDER = ["Muy buena", "Buena", "Aceptable", "Mala", "Muy mala", "No sabe"]
+
+
+def figuras_estadisticas_barrio(df_local, variable_activa, altura=340):
+    """
+    Construye hasta tres figuras Plotly (resumen, estrato, distribución).
+    altura: usa valores moderados para caber en modal sin scroll.
+    """
     if df_local.empty:
-        return "<div style='padding:20px;font-family:sans-serif;'><h4>" + nombre_zona + "</h4><p>Sin datos.</p></div>"
+        return None, None, None
     vars_mostrar = variables if variable_activa == "Todas" else [variable_activa]
     resultados = []
     for col_var in vars_mostrar:
@@ -251,104 +269,197 @@ def generar_popup_html(df_local, nombre_zona, variable_activa):
         negativos = df_temp[df_temp["categoria"].isin(["Mala", "Muy mala"])].shape[0]
         total = len(df_temp)
         if total > 0:
-            resultados.append({"Variable": col_var, "Porcentaje Negativo": round((negativos/total)*100, 1)})
-    html_g1 = ""
+            resultados.append(
+                {"Variable": col_var, "Porcentaje Negativo": round((negativos / total) * 100, 1)}
+            )
+    fig1 = None
     if resultados:
         df_plot1 = pd.DataFrame(resultados).sort_values("Porcentaje Negativo", ascending=True)
-        fig1 = px.bar(df_plot1, x="Porcentaje Negativo", y="Variable", orientation='h',
-                      title="1. Top Problemas (Percepción Negativa %)",
-                      color="Porcentaje Negativo", color_continuous_scale="Reds",
-                      text="Porcentaje Negativo")
-        fig1.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
-        fig1.update_layout(
-            margin=dict(l=10, r=60, t=45, b=10),
-            height=220,
-            coloraxis_showscale=False,
-            xaxis=dict(title="% Negativo", ticksuffix="%", showgrid=True, gridcolor="#eee"),
-            yaxis=dict(title=""),
-            font=dict(size=11)
+        fig1 = px.bar(
+            df_plot1,
+            x="Porcentaje Negativo",
+            y="Variable",
+            orientation="h",
+            title="Percepción negativa por variable",
+            color="Porcentaje Negativo",
+            color_continuous_scale="Reds",
+            text="Porcentaje Negativo",
         )
-        html_g1 = fig1.to_html(full_html=False, include_plotlyjs='cdn')
-    df_long = df_local.melt(id_vars=["11. Estrato"], value_vars=vars_mostrar, var_name="Variable", value_name="Valor")
+        fig1.update_traces(texttemplate="%{text:.1f}%", textposition="outside")
+        fig1.update_layout(
+            margin=dict(l=8, r=48, t=48, b=8),
+            height=altura,
+            coloraxis_showscale=False,
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="#f8fafc",
+            xaxis=dict(title="% negativo", ticksuffix="%", showgrid=True, gridcolor="#e2e8f0"),
+            yaxis=dict(title=""),
+            font=dict(size=12, color="#1e293b"),
+        )
+    df_long = df_local.melt(
+        id_vars=["11. Estrato"],
+        value_vars=vars_mostrar,
+        var_name="Variable",
+        value_name="Valor",
+    )
     df_long["categoria"] = df_long["Valor"].apply(map_categoria)
-    # Convertir estrato a string legible
-    df_long["Estrato"] = df_long["11. Estrato"].apply(lambda x: f"Estrato {int(x)}" if pd.notna(x) and str(x).isdigit() else str(x))
+    df_long["Estrato"] = df_long["11. Estrato"].apply(
+        lambda x: f"Estrato {int(x)}" if pd.notna(x) and str(x).isdigit() else str(x)
+    )
     df_plot2 = df_long.groupby(["Estrato", "categoria"]).size().reset_index(name="count")
-    html_g2 = ""
+    fig2 = None
     if not df_plot2.empty:
         df_plot2["total"] = df_plot2.groupby("Estrato")["count"].transform("sum")
         df_plot2["Pct"] = ((df_plot2["count"] / df_plot2["total"]) * 100).round(1)
-        
-        cat_order = ["Muy buena", "Buena", "Aceptable", "Mala", "Muy mala", "No sabe"]
-        color_map = {
-            "Muy buena": "#2ecc71", "Buena": "#27ae60",
-            "Aceptable": "#f1c40f", "Mala": "#e67e22",
-            "Muy mala": "#e74c3c", "No sabe": "#bdc3c7"
-        }
-        
-        # Ordenar estratos numéricamente
-        estratos_order = sorted(df_plot2["Estrato"].unique(), key=lambda x: int(x.split()[-1]) if x.split()[-1].isdigit() else 99)
-        
+        estratos_order = sorted(
+            df_plot2["Estrato"].unique(),
+            key=lambda x: int(x.split()[-1]) if x.split()[-1].isdigit() else 99,
+        )
         fig2 = px.bar(
-            df_plot2, x="Estrato", y="Pct",
-            color="categoria", barmode="stack",
-            title="2. Percepción por Estrato",
-            color_discrete_map=color_map,
-            category_orders={"categoria": cat_order, "Estrato": estratos_order},
-            text="Pct"
+            df_plot2,
+            x="Estrato",
+            y="Pct",
+            color="categoria",
+            barmode="stack",
+            title="Percepción por estrato",
+            color_discrete_map=COLOR_MAP_CATEG,
+            category_orders={"categoria": CAT_ORDER, "Estrato": estratos_order},
+            text="Pct",
         )
         fig2.update_traces(
-            texttemplate='%{text:.0f}%',
-            textposition='inside',
-            insidetextanchor='middle',
-            textfont=dict(size=10, color='white')
+            texttemplate="%{text:.0f}%",
+            textposition="inside",
+            insidetextanchor="middle",
+            textfont=dict(size=10, color="white"),
         )
         fig2.update_layout(
-            margin=dict(l=10, r=10, t=45, b=60),
-            height=300,
-            xaxis=dict(title="Estrato", tickangle=0),
-            yaxis=dict(title="Porcentaje (%)", ticksuffix="%", range=[0, 105]),
+            margin=dict(l=8, r=8, t=48, b=72),
+            height=altura + 40,
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="#f8fafc",
+            xaxis=dict(title="Estrato"),
+            yaxis=dict(title="%", ticksuffix="%", range=[0, 105]),
             legend=dict(
-                orientation="h", yanchor="bottom", y=-0.45,
-                xanchor="center", x=0.5,
-                title="", font=dict(size=10)
+                orientation="h",
+                yanchor="bottom",
+                y=-0.42,
+                xanchor="center",
+                x=0.5,
+                title="",
+                font=dict(size=10),
             ),
-            font=dict(size=11),
-            bargap=0.25
+            font=dict(size=12, color="#1e293b"),
+            bargap=0.22,
         )
-        html_g2 = fig2.to_html(full_html=False, include_plotlyjs=False)
     df_pie = df_long["categoria"].value_counts().reset_index()
     df_pie.columns = ["categoria", "count"]
-    html_g3 = ""
+    fig3 = None
     if not df_pie.empty:
-        fig3 = px.pie(df_pie, values="count", names="categoria",
-                      title="3. Distribución (" + variable_activa + ")",
-                      color="categoria",
-                      color_discrete_map={
-                          "Muy buena": "#2ecc71", "Buena": "#27ae60",
-                          "Aceptable": "#f1c40f", "Mala": "#e67e22",
-                          "Muy mala": "#e74c3c", "No sabe": "#bdc3c7"
-                      })
-        fig3.update_traces(textposition='inside', textinfo='percent+label', textfont=dict(size=11))
-        fig3.update_layout(
-            margin=dict(l=10, r=10, t=45, b=10),
-            height=270,
-            showlegend=False,
-            font=dict(size=11)
+        fig3 = px.pie(
+            df_pie,
+            values="count",
+            names="categoria",
+            title="Distribución — " + str(variable_activa),
+            color="categoria",
+            color_discrete_map=COLOR_MAP_CATEG,
         )
-        html_g3 = fig3.to_html(full_html=False, include_plotlyjs=False)
-        
-    html = f"""
-    <div style="width: 500px; height: 550px; overflow-y: scroll; overflow-x: hidden; font-family: sans-serif; padding: 5px; box-sizing: border-box;">
-        <h3 style="margin-top:0; text-align:center; color:#2c3e50; position: sticky; top: 0; background: white; z-index: 10; padding-bottom: 10px; border-bottom: 1px solid #ccc;">{nombre_zona}</h3>
-        {html_g1}
-        <div style="height: 10px;"></div>
-        {html_g2}
-        <div style="height: 10px;"></div>
-        {html_g3}
-    </div>
-    """
-    return html
+        fig3.update_traces(
+            textposition="inside",
+            textinfo="percent+label",
+            textfont=dict(size=11),
+        )
+        fig3.update_layout(
+            margin=dict(l=8, r=8, t=48, b=8),
+            height=altura,
+            showlegend=False,
+            paper_bgcolor="rgba(0,0,0,0)",
+            font=dict(size=12, color="#1e293b"),
+        )
+    return fig1, fig2, fig3
+
+
+def filtrar_datos_barrio_seleccionado(df_source: pd.DataFrame) -> pd.DataFrame:
+    bc = st.session_state.get("barrio_click")
+    cc = st.session_state.get("comuna_click")
+    if not bc or not cc:
+        return pd.DataFrame()
+    df_popup = df_source[
+        (df_source["barrio"] == bc) & (df_source["comuna"].apply(limpiar) == limpiar(cc))
+    ]
+    if df_popup.empty:
+        df_popup = df_source[df_source["barrio"] == bc]
+    return df_popup
+
+
+def resolver_feature_barrio(features_mostrar):
+    bc = st.session_state.get("barrio_click")
+    if not bc or not features_mostrar:
+        return None
+    for f in features_mostrar:
+        props = f.get("properties") or {}
+        key = (props.get("comuna_limpia"), props.get("barrio_limpio"))
+        if mapeo_barrios.get(key) == bc:
+            return f
+    b_limpio = limpiar(bc)
+    for f in features_mostrar:
+        if f.get("properties", {}).get("barrio_limpio") == b_limpio:
+            return f
+    return None
+
+
+@st.dialog("📊 Estadísticas del barrio", width="large")
+def modal_estadisticas_barrio(df_local, barrio_nombre, comuna_nombre, variable_activa):
+    safe_b = html.escape(str(barrio_nombre))
+    safe_c = html.escape(str(comuna_nombre))
+    safe_v = html.escape(str(variable_activa))
+    st.markdown(
+        f"""
+        <div style="
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #0c4a6e 100%);
+            color: #f8fafc;
+            padding: 1.1rem 1.25rem;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.25);
+        ">
+            <div style="font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.85;">Encuesta — percepción ambiental</div>
+            <div style="font-size: 1.35rem; font-weight: 700; margin-top: 0.35rem;">🏡 {safe_b}</div>
+            <div style="font-size: 0.95rem; opacity: 0.9; margin-top: 0.25rem;">📍 {safe_c}</div>
+            <div style="margin-top: 0.6rem; font-size: 0.9rem;"><span style="opacity:0.85">Variable:</span> <b>{safe_v}</b></div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    if df_local.empty:
+        st.info("No hay registros en la encuesta para esta zona con los filtros actuales.")
+        if st.button("Cerrar", use_container_width=True):
+            st.rerun()
+        return
+    fig1, fig2, fig3 = figuras_estadisticas_barrio(df_local, variable_activa, altura=360)
+    tab1, tab2, tab3 = st.tabs(["📈 Resumen por variable", "🏘️ Por estrato", "🥧 Distribución"])
+    cfg = {"displayModeBar": True, "displaylogo": False, "modeBarButtonsToRemove": ["lasso2d", "select2d"]}
+    with tab1:
+        if fig1:
+            st.plotly_chart(fig1, use_container_width=True, config=cfg)
+        else:
+            st.caption("Sin datos para este resumen.")
+    with tab2:
+        if fig2:
+            st.plotly_chart(fig2, use_container_width=True, config=cfg)
+        else:
+            st.caption("Sin datos por estrato.")
+    with tab3:
+        if fig3:
+            st.plotly_chart(fig3, use_container_width=True, config=cfg)
+        else:
+            st.caption("Sin datos para la distribución.")
+    st.divider()
+    c1, c2 = st.columns([1, 2])
+    with c1:
+        if st.button("Cerrar", use_container_width=True, type="primary"):
+            st.rerun()
+    with c2:
+        st.caption(f"**{len(df_local)}** respuestas en esta selección")
 
 # ── TÍTULO ──
 st.title("🌿 Dashboard Ambiental - Medellín")
@@ -403,8 +514,6 @@ if st.session_state["comuna_click"]:
         st.session_state["map_zoom"] = 12
         st.session_state["variable_comuna"] = "Todas"
         st.rerun()
-
-if st.session_state["barrio_click"]:
     st.sidebar.markdown(
         "<div style='background:#f0f0f0;border-left:5px solid #555;padding:10px 12px;border-radius:6px;margin-top:8px;'>"
         "<span style='font-size:11px;color:#777;text-transform:uppercase;letter-spacing:1px;'>Barrio activo</span><br>"
@@ -414,6 +523,9 @@ if st.session_state["barrio_click"]:
     st.sidebar.markdown("<br>", unsafe_allow_html=True)
     if st.sidebar.button("❌ Quitar selección de Barrio", use_container_width=True):
         st.session_state["barrio_click"] = None
+        st.rerun()
+    if st.sidebar.button("📊 Ver estadísticas (modal)", key="btn_abrir_modal_stats", use_container_width=True):
+        st.session_state["_abrir_modal_barrio"] = True
         st.rerun()
 
 if st.session_state["comuna_click"] is None:
@@ -525,25 +637,21 @@ if features_mostrar:
     ).add_to(mapa)
 
 if st.session_state["barrio_click"] and modo == "barrios":
-    b_limpio = limpiar(st.session_state["barrio_click"])
-    for f in features_mostrar:
-        if f["properties"].get("barrio_limpio") == b_limpio:
-            centroid = centroide_feature(f)
-            if centroid:
-                # Filtrar por BARRIO Y COMUNA para evitar mezcla de datos entre comunas
-                comuna_actual = st.session_state["comuna_click"]
-                df_popup = df[
-                    (df["barrio"] == st.session_state["barrio_click"]) &
-                    (df["comuna"].apply(limpiar) == limpiar(comuna_actual))
-                ]
-                # Si no hay datos con el filtro estricto, relajar al barrio solo
-                if df_popup.empty:
-                    df_popup = df[df["barrio"] == st.session_state["barrio_click"]]
-                html_popup = generar_popup_html(df_popup, f"{st.session_state['barrio_click']} ({comuna_actual})", variable_select)
-                iframe = folium.IFrame(html=html_popup, width=540, height=540)
-                folium.Marker(location=centroid, icon=folium.Icon(color="red", icon="info-sign"),
-                              popup=folium.Popup(iframe, max_width=550)).add_to(mapa)
-            break
+    feat_barrio = resolver_feature_barrio(features_mostrar)
+    if feat_barrio:
+        centroid = centroide_feature(feat_barrio)
+        if centroid:
+            folium.Marker(
+                location=centroid,
+                icon=folium.Icon(color="red", icon="info-sign"),
+                tooltip="Barrio seleccionado — estadísticas en el modal",
+                popup=folium.Popup(
+                    "<div style='font-family:sans-serif;padding:8px;text-align:center;'>"
+                    "<b>Barrio seleccionado</b><br><small>Usa el modal de estadísticas "
+                    "(se abre al elegir el barrio o desde el botón en la barra lateral).</small></div>",
+                    max_width=280,
+                ),
+            ).add_to(mapa)
 
 if bbox_capa:
     FitBoundsYLimiteZoomSalida(bbox_capa, pad_px=12, max_zoom=18).add_to(mapa)
@@ -601,6 +709,21 @@ if mapa_data and mapa_data.get("last_active_drawing"):
                 
             if nombre_final and nombre_final != st.session_state["barrio_click"]:
                 st.session_state["barrio_click"] = nombre_final
+                st.session_state["_abrir_modal_barrio"] = True
                 st.rerun()
+
+if st.session_state.pop("_abrir_modal_barrio", False):
+    if (
+        modo == "barrios"
+        and st.session_state.get("barrio_click")
+        and st.session_state.get("comuna_click")
+    ):
+        _df_modal = filtrar_datos_barrio_seleccionado(df_base)
+        modal_estadisticas_barrio(
+            _df_modal,
+            st.session_state["barrio_click"],
+            st.session_state["comuna_click"],
+            variable_select,
+        )
 
 st.markdown("<br><br>", unsafe_allow_html=True)
