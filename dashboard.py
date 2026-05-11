@@ -155,7 +155,7 @@ def render_variable_btns(opciones, val_actual, key_prefix, state_key):
             f"</style><span class='vbm-{key_prefix}-{i}'></span>",
             unsafe_allow_html=True
         )
-        if st.sidebar.button(f"{info['emoji']} {op}", key=f"{key_prefix}_{op}", use_container_width=True):
+        if st.sidebar.button(f"{info['emoji']} {op}", key=f"{key_prefix}_{op}", width="stretch"):
             st.session_state[state_key] = op
             st.rerun()
 
@@ -432,7 +432,7 @@ def modal_estadisticas_barrio(df_local, barrio_nombre, comuna_nombre, variable_a
     )
     if df_local.empty:
         st.info("No hay registros en la encuesta para esta zona con los filtros actuales.")
-        if st.button("Cerrar", use_container_width=True):
+        if st.button("Cerrar", width="stretch"):
             st.rerun()
         return
     fig1, fig2, fig3 = figuras_estadisticas_barrio(df_local, variable_activa, altura=360)
@@ -440,23 +440,23 @@ def modal_estadisticas_barrio(df_local, barrio_nombre, comuna_nombre, variable_a
     cfg = {"displayModeBar": True, "displaylogo": False, "modeBarButtonsToRemove": ["lasso2d", "select2d"]}
     with tab1:
         if fig1:
-            st.plotly_chart(fig1, use_container_width=True, config=cfg)
+            st.plotly_chart(fig1, width="stretch", config=cfg)
         else:
             st.caption("Sin datos para este resumen.")
     with tab2:
         if fig2:
-            st.plotly_chart(fig2, use_container_width=True, config=cfg)
+            st.plotly_chart(fig2, width="stretch", config=cfg)
         else:
             st.caption("Sin datos por estrato.")
     with tab3:
         if fig3:
-            st.plotly_chart(fig3, use_container_width=True, config=cfg)
+            st.plotly_chart(fig3, width="stretch", config=cfg)
         else:
             st.caption("Sin datos para la distribución.")
     st.divider()
     c1, c2 = st.columns([1, 2])
     with c1:
-        if st.button("Cerrar", use_container_width=True, type="primary"):
+        if st.button("Cerrar", width="stretch", type="primary"):
             st.rerun()
     with c2:
         st.caption(f"**{len(df_local)}** respuestas en esta selección")
@@ -528,7 +528,7 @@ else:
 
 if st.session_state["comuna_click"]:
     _sidebar_seccion("Navegación")
-    if st.sidebar.button("⬅️ Volver a todas las comunas", key="btn_volver", use_container_width=True):
+    if st.sidebar.button("⬅️ Volver a todas las comunas", key="btn_volver", width="stretch"):
         st.session_state["comuna_click"] = None
         st.session_state["barrio_click"] = None
         st.session_state["map_center"] = [6.2442, -75.5812]
@@ -567,10 +567,10 @@ if st.session_state["comuna_click"]:
             unsafe_allow_html=True,
         )
         st.sidebar.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
-        if st.sidebar.button("❌ Quitar", key="sb_quitar_barrio", use_container_width=True):
+        if st.sidebar.button("❌ Quitar", key="sb_quitar_barrio", width="stretch"):
             st.session_state["barrio_click"] = None
             st.rerun()
-        if st.sidebar.button("📊 Estadísticas", key="btn_abrir_modal_stats", use_container_width=True):
+        if st.sidebar.button("📊 Estadísticas", key="btn_abrir_modal_stats", width="stretch"):
             st.session_state["_abrir_modal_barrio"] = True
             st.rerun()
 
