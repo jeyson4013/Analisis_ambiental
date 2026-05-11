@@ -461,9 +461,35 @@ def modal_estadisticas_barrio(df_local, barrio_nombre, comuna_nombre, variable_a
     with c2:
         st.caption(f"**{len(df_local)}** respuestas en esta selección")
 
-# ── TÍTULO ──
-st.title("🌿 Dashboard Ambiental - Medellín")
-st.markdown("Explora el mapa. **Haz click en una comuna** para ver sus barrios, luego **haz click en un barrio** para ver gráficas detalladas.")
+
+def _sidebar_seccion(titulo: str) -> None:
+    st.sidebar.markdown(
+        "<p style='margin:14px 0 8px 0;padding:0;font-size:11px;font-weight:600;"
+        "color:#64748b;text-transform:uppercase;letter-spacing:0.08em;border-bottom:1px solid #e2e8f0;padding-bottom:6px;'>"
+        + html.escape(titulo)
+        + "</p>",
+        unsafe_allow_html=True,
+    )
+
+
+# Área principal: mapa acotado al alto de la ventana (menos scroll vertical)
+st.markdown(
+    """
+<style>
+  .main .block-container {
+    padding-top: 0.35rem !important;
+    padding-bottom: 0 !important;
+  }
+  div[data-testid="stIFrame"] iframe {
+    max-height: calc(100dvh - 3.5rem) !important;
+    height: calc(100dvh - 3.5rem) !important;
+    min-height: 280px;
+  }
+</style>
+""",
+    unsafe_allow_html=True,
+)
+MAP_ALTO_PX = 720
 
 # ── SIDEBAR ──
 st.sidebar.markdown(
@@ -482,12 +508,18 @@ st.sidebar.markdown("""
     height: auto !important;
     box-shadow: none !important;
     transition: border-color 0.15s !important;
+    margin-bottom: 4px !important;
+}
+[data-testid="stSidebar"] [data-testid="column"] .stButton > button {
+    font-size: 12px !important;
+    padding: 6px 8px !important;
 }
 </style>
 """, unsafe_allow_html=True)
 
 if st.session_state["comuna_click"] is None:
-    st.sidebar.markdown("<p style='font-size:13px;color:#555;margin-bottom:4px;'><b>Variable ambiental</b></p>", unsafe_allow_html=True)
+    _sidebar_seccion("Vista general")
+    st.sidebar.caption("Color del mapa según la variable en todas las comunas.")
     render_variable_btns(opciones_vars, st.session_state["variable_global_val"], "gvar", "variable_global_val")
     variable_select = st.session_state["variable_global_val"]
     st.session_state["variable_comuna"] = "Todas"
@@ -495,49 +527,70 @@ else:
     variable_select = "Todas"
 
 if st.session_state["comuna_click"]:
-    st.sidebar.markdown("---")
-    color_c = color_por_comuna.get(st.session_state["comuna_click"], "#888")
-    st.sidebar.markdown(
-        "<div style='background:" + color_c + "22;border-left:5px solid " + color_c + ";padding:10px 12px;border-radius:6px;'>"
-        "<span style='font-size:11px;color:#777;text-transform:uppercase;letter-spacing:1px;'>Comuna activa</span><br>"
-        "<span style='font-size:15px;font-weight:700;color:#2c3e50;'>📍 " + st.session_state["comuna_click"] + "</span></div>",
-        unsafe_allow_html=True
-    )
-    st.sidebar.markdown("<br><p style='font-size:13px;color:#555;margin-bottom:4px;'><b>🔍 Variable en esta comuna</b></p>", unsafe_allow_html=True)
-    render_variable_btns(opciones_vars, st.session_state["variable_comuna"], "cvar", "variable_comuna")
-    variable_select = st.session_state["variable_comuna"]
-    st.sidebar.markdown("<br>", unsafe_allow_html=True)
-    if st.sidebar.button("⬅️ Volver a todas las Comunas", key="btn_volver", use_container_width=True):
+    _sidebar_seccion("Navegación")
+    if st.sidebar.button("⬅️ Volver a todas las comunas", key="btn_volver", use_container_width=True):
         st.session_state["comuna_click"] = None
         st.session_state["barrio_click"] = None
         st.session_state["map_center"] = [6.2442, -75.5812]
         st.session_state["map_zoom"] = 12
         st.session_state["variable_comuna"] = "Todas"
         st.rerun()
+    _sidebar_seccion("Variable en el mapa")
+    render_variable_btns(opciones_vars, st.session_state["variable_comuna"], "cvar", "variable_comuna")
+    variable_select = st.session_state["variable_comuna"]
+    _sidebar_seccion("Comuna activa")
+    color_c = color_por_comuna.get(st.session_state["comuna_click"], "#888")
+    cn = html.escape(str(st.session_state["comuna_click"]))
     st.sidebar.markdown(
-        "<div style='background:#f0f0f0;border-left:5px solid #555;padding:10px 12px;border-radius:6px;margin-top:8px;'>"
-        "<span style='font-size:11px;color:#777;text-transform:uppercase;letter-spacing:1px;'>Barrio activo</span><br>"
-        "<span style='font-size:14px;font-weight:700;color:#2c3e50;'>🏡 " + st.session_state["barrio_click"] + "</span></div>",
-        unsafe_allow_html=True
+        "<div style='background:"
+        + color_c
+        + "22;border-left:5px solid "
+        + color_c
+        + ";padding:10px 12px;border-radius:8px;margin-bottom:2px;'>"
+        "<span style='font-size:11px;color:#475569;text-transform:uppercase;letter-spacing:0.06em;'>"
+        "Ubicación</span><br>"
+        "<span style='font-size:15px;font-weight:700;color:#0f172a;'>📍 "
+        + cn
+        + "</span></div>",
+        unsafe_allow_html=True,
     )
-    st.sidebar.markdown("<br>", unsafe_allow_html=True)
-    if st.sidebar.button("❌ Quitar selección de Barrio", use_container_width=True):
-        st.session_state["barrio_click"] = None
-        st.rerun()
-    if st.sidebar.button("📊 Ver estadísticas (modal)", key="btn_abrir_modal_stats", use_container_width=True):
-        st.session_state["_abrir_modal_barrio"] = True
-        st.rerun()
+    if st.session_state["barrio_click"]:
+        _sidebar_seccion("Barrio activo")
+        bn = html.escape(str(st.session_state["barrio_click"]))
+        st.sidebar.markdown(
+            "<div style='background:#f1f5f9;border-left:5px solid #334155;padding:10px 12px;border-radius:8px;'>"
+            "<span style='font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:0.06em;'>"
+            "Selección</span><br>"
+            "<span style='font-size:14px;font-weight:700;color:#0f172a;'>🏡 "
+            + bn
+            + "</span></div>",
+            unsafe_allow_html=True,
+        )
+        st.sidebar.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
+        bc1, bc2 = st.sidebar.columns(2)
+        with bc1:
+            if st.button("❌ Quitar", key="sb_quitar_barrio", use_container_width=True):
+                st.session_state["barrio_click"] = None
+                st.rerun()
+        with bc2:
+            if st.button("📊 Estadísticas", key="btn_abrir_modal_stats", use_container_width=True):
+                st.session_state["_abrir_modal_barrio"] = True
+                st.rerun()
 
 if st.session_state["comuna_click"] is None:
-    st.sidebar.markdown("---")
-    st.sidebar.markdown("<p style='font-size:13px;font-weight:700;color:#2c3e50;margin-bottom:6px;'>🗺️ Comunas</p>", unsafe_allow_html=True)
+    _sidebar_seccion("Referencia de comunas")
     cols = st.sidebar.columns(2)
     for i, (comuna, color) in enumerate(color_por_comuna.items()):
+        comuna_esc = html.escape(str(comuna))
         cols[i % 2].markdown(
             "<div style='display:flex;align-items:center;gap:5px;margin-bottom:4px;'>"
-            "<span style='display:inline-block;width:10px;height:10px;border-radius:50%;background:" + color + ";'></span>"
-            "<span style='font-size:10px;color:#444;'>" + comuna + "</span></div>",
-            unsafe_allow_html=True
+            "<span style='display:inline-block;width:10px;height:10px;border-radius:50%;background:"
+            + color
+            + ";'></span>"
+            "<span style='font-size:10px;color:#444;'>"
+            + comuna_esc
+            + "</span></div>",
+            unsafe_allow_html=True,
         )
 
 # ── MAPA ──
@@ -674,7 +727,13 @@ if modo == "barrios":
                    "<span style='color:#e74c3c'>■</span> &gt;50% — Crítico</div>")
     mapa.get_root().html.add_child(folium.Element(leyenda))
 
-mapa_data = st_folium(mapa, use_container_width=True, height=750, returned_objects=["last_active_drawing"], key="mapa_medellin")
+mapa_data = st_folium(
+    mapa,
+    use_container_width=True,
+    height=MAP_ALTO_PX,
+    returned_objects=["last_active_drawing"],
+    key="mapa_medellin",
+)
 
 if mapa_data and mapa_data.get("last_active_drawing"):
     props = mapa_data["last_active_drawing"].get("properties", {})
@@ -725,5 +784,3 @@ if st.session_state.pop("_abrir_modal_barrio", False):
             st.session_state["comuna_click"],
             variable_select,
         )
-
-st.markdown("<br><br>", unsafe_allow_html=True)
