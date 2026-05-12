@@ -1,0 +1,19 @@
+# Entorno virtual
+env/
+venv/
+.venv/
+
+# Cache de Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Scripts temporales de análisis
+scratch/
+
+# Archivos temporales de Excel (cuando está abierto)
+~$*.xlsx
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
