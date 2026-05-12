@@ -489,7 +489,7 @@ st.markdown(
 """,
     unsafe_allow_html=True,
 )
-MAP_ALTO_PX = 720
+MAP_ALTO_PX = 700
 
 # ── SIDEBAR ──
 st.sidebar.markdown(
@@ -723,6 +723,8 @@ if modo == "barrios":
                    "<span style='color:#e67e22'>■</span> 25-50% — Alto<br>"
                    "<span style='color:#e74c3c'>■</span> &gt;50% — Crítico</div>")
     mapa.get_root().html.add_child(folium.Element(leyenda))
+
+st.markdown("### Vivir en la ciudad ¿Qué tan sano es nuestro entorno para todos?")
 
 mapa_data = st_folium(
     mapa,
