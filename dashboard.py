@@ -1,4 +1,3 @@
-import html
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -6,39 +5,8 @@ import requests
 import unicodedata
 import re
 import folium
-from branca.element import MacroElement
-from folium.template import Template
-import json
 from streamlit_folium import st_folium
 from difflib import get_close_matches
-
-
-class FitBoundsYLimiteZoomSalida(MacroElement):
-    """fitBounds al bbox y luego minZoom = zoom actual (sin zoom out más allá de lo relevante)."""
-
-    _template = Template(
-        """
-        {% macro script(this, kwargs) %}
-        (function () {
-            var m = {{ this._parent.get_name() }};
-            var b = {{ this.bounds|tojson }};
-            m.fitBounds(b, {
-                padding: [{{ this.pad_px }}, {{ this.pad_px }}],
-                maxZoom: {{ this.max_zoom }},
-                animate: false
-            });
-            m.setMinZoom(m.getZoom());
-        })();
-        {% endmacro %}
-        """
-    )
-
-    def __init__(self, bounds, pad_px=12, max_zoom=18):
-        super().__init__()
-        self._name = "FitBoundsYLimiteZoomSalida"
-        self.bounds = bounds
-        self.pad_px = int(pad_px)
-        self.max_zoom = int(max_zoom)
 
 st.set_page_config(page_title="Dashboard Ambiental Medellín", layout="wide")
 
@@ -108,38 +76,6 @@ def centroide_feature(feat):
         return [lat, lng]
     except Exception: return None
 
-def bounds_from_features(features):
-    """[[lat_sur_oeste, lng_sur_oeste], [lat_nor_este, lng_nor_este]] para fit_bounds."""
-    min_lat, max_lat = 90.0, -90.0
-    min_lng, max_lng = 180.0, -180.0
-    hay = False
-    for f in features:
-        geom = f.get("geometry") or {}
-        gtype = geom.get("type")
-        coords = geom.get("coordinates")
-        if not coords:
-            continue
-        puntos = []
-        if gtype == "Polygon":
-            for anillo in coords:
-                puntos.extend(anillo)
-        elif gtype == "MultiPolygon":
-            for poligono in coords:
-                for anillo in poligono:
-                    puntos.extend(anillo)
-        else:
-            continue
-        for p in puntos:
-            if len(p) < 2:
-                continue
-            lng, lat = float(p[0]), float(p[1])
-            min_lat, max_lat = min(min_lat, lat), max(max_lat, lat)
-            min_lng, max_lng = min(min_lng, lng), max(max_lng, lng)
-            hay = True
-    if not hay:
-        return None
-    return [[min_lat, min_lng], [max_lat, max_lng]]
-
 def render_variable_btns(opciones, val_actual, key_prefix, state_key):
     # val_actual is a list; show hint about multi-select
     num_vars = len([v for v in val_actual if v != "Todas"])
@@ -186,32 +122,24 @@ def render_variable_btns(opciones, val_actual, key_prefix, state_key):
 def cargar_datos():
     df = pd.read_excel("ECV_2025_Limpio.xlsx")
     df = df[df["4. Ubicación geográfica - Municipio"].str.contains("Medell", na=False)]
-    
-    # Ajuste de nombres conocidos para compatibilidad con el mapa
-    df["6. Comuna o Corregimiento"] = df["6. Comuna o Corregimiento"].replace({
-        "LAURELES": "LAURELES ESTADIO",
-        "Laureles": "LAURELES ESTADIO"
-    })
-    
     df["barrio"] = df["7. Barrio o Vereda"].fillna("Sin información")
     df["comuna"] = df["6. Comuna o Corregimiento"].fillna("Sin información")
     return df
 
 @st.cache_data(show_spinner="Cargando GeoJSON...")
 def cargar_geojson():
-    import json
+    url = "https://cdn.jsdelivr.net/gh/juanfrans/estratosBogota@master/EstratosMedellin.geojson"
     try:
-        with open("medellin_debug.geojson", "r", encoding="utf-8") as f:
-            geojson = json.load(f)
-    except Exception as e:
-        st.error(f"Error cargando GeoJSON local: {e}")
+        r = requests.get(url, timeout=15)
+        r.raise_for_status()
+        geojson = r.json()
+    except:
         return {"type": "FeatureCollection", "features": []}
     for f in geojson.get("features", []):
         props = f["properties"]
         props["barrio_limpio"] = limpiar(props.get("NOMBRE", ""))
         c_raw = props.get("Comuna")
         if c_raw:
-            # Eliminar prefijo 'COMUNA X ' si existe
             props["comuna_limpia"] = re.sub(r'COMUNA \d+ ', '', limpiar(c_raw))
         else:
             props["comuna_limpia"] = "SIN INFORMACION"
@@ -220,45 +148,15 @@ def cargar_geojson():
 df_base = cargar_datos()
 geojson = cargar_geojson()
 
-# Crear un mapeo jerárquico: (Comuna Limpia, Barrio Limpio) -> Comuna Original del DF
-mapeo_jerarquico = {}
-# Crear mapeo jerárquico para nombres de barrios: (Comuna Limpia, Barrio Limpio) -> Barrio Original
-mapeo_barrios = {}
-
-for _, row in df_base.iterrows():
-    c_lim = limpiar(row["comuna"])
-    b_lim = limpiar(row["barrio"])
-    k = (c_lim, b_lim)
-    if k not in mapeo_jerarquico:
-        mapeo_jerarquico[k] = row["comuna"]
-    if k not in mapeo_barrios:
-        mapeo_barrios[k] = row["barrio"]
-
 comunas_df_lista = df_base["comuna"].dropna().unique().tolist()
 comunas_df_norm = {limpiar(c): c for c in comunas_df_lista}
 barrios_df_lista = df_base["barrio"].dropna().unique().tolist()
 barrios_df_norm = {limpiar(b): b for b in barrios_df_lista}
 
 for f in geojson.get("features", []):
-    props = f["properties"]
-    b_limpio = props.get("barrio_limpio")
-    c_limpia = props.get("comuna_limpia")
-    
-    # Intentar match jerárquico exacto primero
-    llave = (c_limpia, b_limpio)
-    if llave in mapeo_jerarquico:
-        props["comuna_df"] = mapeo_jerarquico[llave]
-    else:
-        # Si no hay match exacto, buscar el mejor barrio dentro de ESA comuna
-        barrios_en_esta_comuna = [b for (c, b) in mapeo_jerarquico.keys() if c == c_limpia]
-        mejor_b = encontrar_mejor_match(b_limpio, barrios_en_esta_comuna, cutoff=0.7)
-        
-        if mejor_b:
-            props["comuna_df"] = mapeo_jerarquico[(c_limpia, mejor_b)]
-        else:
-            # Último recurso: match de comuna
-            mejor_c = encontrar_mejor_match(c_limpia, list(comunas_df_norm.keys()), cutoff=0.5)
-            props["comuna_df"] = comunas_df_norm.get(mejor_c) if mejor_c else "Sin información"
+    c_limpia = f["properties"].get("comuna_limpia")
+    mejor_c = encontrar_mejor_match(c_limpia, list(comunas_df_norm.keys()), cutoff=0.5)
+    f["properties"]["comuna_df"] = comunas_df_norm.get(mejor_c) if mejor_c else None
 
 variables = ["Aire", "Ríos", "Ruido", "Basuras", "Contaminación Visual"]
 opciones_vars = ["Todas"] + variables
@@ -298,10 +196,8 @@ def figuras_estadisticas_barrio(df_local, variable_activa, estratos_sel=None, al
         negativos = df_temp[df_temp["categoria"].isin(["Mala", "Muy mala"])].shape[0]
         total = len(df_temp)
         if total > 0:
-            resultados.append(
-                {"Variable": col_var, "Porcentaje Negativo": round((negativos / total) * 100, 1)}
-            )
-    fig1 = None
+            resultados.append({"Variable": col_var, "Porcentaje Negativo": round((negativos/total)*100, 1)})
+    html_g1 = ""
     if resultados:
         df_plot1 = pd.DataFrame(resultados).sort_values("Porcentaje Negativo", ascending=True)
         color_map_vars = {v: COLORES_VARIABLES.get(v, {}).get("color", "#2CC295") for v in variables}
@@ -378,7 +274,7 @@ def figuras_estadisticas_barrio(df_local, variable_activa, estratos_sel=None, al
 
     df_pie = df_long["categoria"].value_counts().reset_index()
     df_pie.columns = ["categoria", "count"]
-    fig3 = None
+    html_g3 = ""
     if not df_pie.empty:
         fig3 = px.pie(
             df_pie,
@@ -631,25 +527,9 @@ def _sidebar_seccion(titulo: str) -> None:
         unsafe_allow_html=True,
     )
 
-
-# Área principal: mapa acotado al alto de la ventana (menos scroll vertical)
-st.markdown(
-    """
-<style>
-  .main .block-container {
-    padding-top: 0.35rem !important;
-    padding-bottom: 0 !important;
-  }
-  div[data-testid="stIFrame"] iframe {
-    max-height: calc(100dvh - 3.5rem) !important;
-    height: calc(100dvh - 3.5rem) !important;
-    min-height: 280px;
-  }
-</style>
-""",
-    unsafe_allow_html=True,
-)
-MAP_ALTO_PX = 700
+# ── TÍTULO ──
+st.title("🌿 Dashboard Ambiental - Medellín")
+st.markdown("Explora el mapa. **Haz click en una comuna** para ver sus barrios, luego **haz click en un barrio** para ver gráficas detalladas.")
 
 # ── SIDEBAR ──
 st.sidebar.markdown(
@@ -695,8 +575,7 @@ st.sidebar.markdown("""
 """, unsafe_allow_html=True)
 
 if st.session_state["comuna_click"] is None:
-    _sidebar_seccion("Vista general")
-    st.sidebar.caption("Color del mapa según la variable en todas las comunas.")
+    st.sidebar.markdown("<p style='font-size:13px;color:#555;margin-bottom:4px;'><b>Variable ambiental</b></p>", unsafe_allow_html=True)
     render_variable_btns(opciones_vars, st.session_state["variable_global_val"], "gvar", "variable_global_val")
     variable_select = st.session_state["variable_global_val"]
     st.session_state["variable_comuna"] = ["Todas"]
@@ -704,20 +583,27 @@ else:
     variable_select = ["Todas"]
 
 if st.session_state["comuna_click"]:
-    _sidebar_seccion("Navegación")
-    if st.sidebar.button("⬅️ Volver a todas las comunas", key="btn_volver", width="stretch"):
+    st.sidebar.markdown("---")
+    color_c = color_por_comuna.get(st.session_state["comuna_click"], "#888")
+    st.sidebar.markdown(
+        "<div style='background:" + color_c + "22;border-left:5px solid " + color_c + ";padding:10px 12px;border-radius:6px;'>"
+        "<span style='font-size:11px;color:#777;text-transform:uppercase;letter-spacing:1px;'>Comuna activa</span><br>"
+        "<span style='font-size:15px;font-weight:700;color:#2c3e50;'>📍 " + st.session_state["comuna_click"] + "</span></div>",
+        unsafe_allow_html=True
+    )
+    st.sidebar.markdown("<br><p style='font-size:13px;color:#555;margin-bottom:4px;'><b>🔍 Variable en esta comuna</b></p>", unsafe_allow_html=True)
+    render_variable_btns(opciones_vars, st.session_state["variable_comuna"], "cvar", "variable_comuna")
+    variable_select = st.session_state["variable_comuna"]
+    st.sidebar.markdown("<br>", unsafe_allow_html=True)
+    if st.sidebar.button("⬅️ Volver a todas las Comunas", key="btn_volver", use_container_width=True):
         st.session_state["comuna_click"] = None
         st.session_state["barrio_click"] = None
         st.session_state["map_center"] = [6.2442, -75.5812]
         st.session_state["map_zoom"] = 12
         st.session_state["variable_comuna"] = ["Todas"]
         st.rerun()
-    _sidebar_seccion("Variable en el mapa")
-    render_variable_btns(opciones_vars, st.session_state["variable_comuna"], "cvar", "variable_comuna")
-    variable_select = st.session_state["variable_comuna"]
-    _sidebar_seccion("Comuna activa")
-    color_c = color_por_comuna.get(st.session_state["comuna_click"], "#888")
-    cn = html.escape(str(st.session_state["comuna_click"]))
+
+if st.session_state["barrio_click"]:
     st.sidebar.markdown(
         "<div style='background:#032221;border-left:5px solid "
         + color_c
@@ -750,10 +636,10 @@ if st.session_state["comuna_click"]:
             st.rerun()
 
 if st.session_state["comuna_click"] is None:
-    _sidebar_seccion("Referencia de comunas")
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("<p style='font-size:13px;font-weight:700;color:#2c3e50;margin-bottom:6px;'>🗺️ Comunas</p>", unsafe_allow_html=True)
     cols = st.sidebar.columns(2)
     for i, (comuna, color) in enumerate(color_por_comuna.items()):
-        comuna_esc = html.escape(str(comuna))
         cols[i % 2].markdown(
             "<div style='display:flex;align-items:center;gap:5px;margin-bottom:4px;'>"
             "<span style='display:inline-block;width:10px;height:10px;border-radius:50%;background:"
@@ -804,46 +690,16 @@ def estilo(feature):
             return {"fillColor": color, "color": "#000000", "weight": 3, "fillOpacity": 0.95}
         return {"fillColor": color, "color": "#ffffff", "weight": 1, "fillOpacity": 0.75}
 
+mapa = folium.Map(location=st.session_state["map_center"], zoom_start=st.session_state["map_zoom"], tiles="CartoDB positron")
+
 features_mostrar = []
-comuna_click_limpia = limpiar(st.session_state["comuna_click"]) if st.session_state["comuna_click"] else None
 for f in geojson.get("features", []):
     if modo == "comunas":
         features_mostrar.append(f)
-    else:
-        # Comparar con limpiar() para evitar diferencias de mayúsculas
-        comuna_df_limpia = limpiar(f["properties"].get("comuna_df", ""))
-        c_limpia_geo = limpiar(f["properties"].get("comuna_limpia", ""))
-        if comuna_df_limpia == comuna_click_limpia or c_limpia_geo == comuna_click_limpia:
-            features_mostrar.append(f)
+    elif f["properties"].get("comuna_df") == st.session_state["comuna_click"]:
+        features_mostrar.append(f)
 
 geo_filtrado = {"type": "FeatureCollection", "features": features_mostrar}
-
-bbox_capa = bounds_from_features(features_mostrar) if features_mostrar else None
-
-if bbox_capa:
-    mn_lat, mn_lng = bbox_capa[0]
-    mx_lat, mx_lng = bbox_capa[1]
-    lat_pad = max((mx_lat - mn_lat) * 0.02, 0.002)
-    lng_pad = max((mx_lng - mn_lng) * 0.02, 0.002)
-    centro_lat = (mn_lat + mx_lat) / 2
-    centro_lng = (mn_lng + mx_lng) / 2
-    mapa = folium.Map(
-        location=[centro_lat, centro_lng],
-        zoom_start=st.session_state["map_zoom"],
-        tiles="CartoDB positron",
-        max_bounds=True,
-        min_lat=mn_lat - lat_pad,
-        max_lat=mx_lat + lat_pad,
-        min_lon=mn_lng - lng_pad,
-        max_lon=mx_lng + lng_pad,
-        max_bounds_viscosity=1.0,
-    )
-else:
-    mapa = folium.Map(
-        location=st.session_state["map_center"],
-        zoom_start=st.session_state["map_zoom"],
-        tiles="CartoDB positron",
-    )
 
 if features_mostrar:
     fields = ["comuna_df", "NOMBRE"] if modo == "comunas" else ["NOMBRE"]
@@ -853,24 +709,17 @@ if features_mostrar:
     ).add_to(mapa)
 
 if st.session_state["barrio_click"] and modo == "barrios":
-    feat_barrio = resolver_feature_barrio(features_mostrar)
-    if feat_barrio:
-        centroid = centroide_feature(feat_barrio)
-        if centroid:
-            folium.Marker(
-                location=centroid,
-                icon=folium.Icon(color="red", icon="info-sign"),
-                tooltip="Barrio seleccionado — estadísticas en el modal",
-                popup=folium.Popup(
-                    "<div style='font-family:sans-serif;padding:8px;text-align:center;'>"
-                    "<b>Barrio seleccionado</b><br><small>Usa el modal de estadísticas "
-                    "(se abre al elegir el barrio o desde el botón en la barra lateral).</small></div>",
-                    max_width=280,
-                ),
-            ).add_to(mapa)
-
-if bbox_capa:
-    FitBoundsYLimiteZoomSalida(bbox_capa, pad_px=12, max_zoom=18).add_to(mapa)
+    b_limpio = limpiar(st.session_state["barrio_click"])
+    for f in features_mostrar:
+        if f["properties"].get("barrio_limpio") == b_limpio:
+            centroid = centroide_feature(f)
+            if centroid:
+                df_popup = df_base[df_base["barrio"] == st.session_state["barrio_click"]]
+                html_popup = generar_popup_html(df_popup, st.session_state["barrio_click"], variable_select)
+                iframe = folium.IFrame(html=html_popup, width=540, height=540)
+                folium.Marker(location=centroid, icon=folium.Icon(color="red", icon="info-sign"),
+                              popup=folium.Popup(iframe, max_width=550)).add_to(mapa)
+            break
 
 if modo == "barrios":
     if "Todas" in variable_select:
@@ -891,19 +740,7 @@ if modo == "barrios":
     )
     mapa.get_root().html.add_child(folium.Element(leyenda))
 
-st.markdown(
-    "<h3 style='color:#2CC295;font-weight:700;letter-spacing:0.01em;margin-bottom:0.3rem;'>"
-    "Vivir en la ciudad — ¿Qué tan sano es nuestro entorno para todos?</h3>",
-    unsafe_allow_html=True,
-)
-
-mapa_data = st_folium(
-    mapa,
-    use_container_width=True,
-    height=MAP_ALTO_PX,
-    returned_objects=["last_active_drawing"],
-    key="mapa_medellin",
-)
+mapa_data = st_folium(mapa, use_container_width=True, height=750, returned_objects=["last_active_drawing"], key="mapa_medellin")
 
 if mapa_data and mapa_data.get("last_active_drawing"):
     props = mapa_data["last_active_drawing"].get("properties", {})
@@ -920,47 +757,11 @@ if mapa_data and mapa_data.get("last_active_drawing"):
             st.rerun()
     elif modo == "barrios":
         b_limpio = props.get("barrio_limpio")
-        c_limpia = props.get("comuna_limpia")
         if b_limpio:
-            # Buscar el nombre original del barrio dentro de la comuna actual
-            key = (c_limpia, b_limpio)
-            if key in mapeo_barrios:
-                nombre_final = mapeo_barrios[key]
-            else:
-                # Fuzzy match SOLO dentro de la misma comuna del GeoJSON
-                barrios_en_esta_comuna = [b for (c, b) in mapeo_barrios.keys() if c == c_limpia]
-                if barrios_en_esta_comuna:
-                    match = encontrar_mejor_match(b_limpio, barrios_en_esta_comuna)
-                    nombre_final = mapeo_barrios.get((c_limpia, match)) if match else None
-                else:
-                    # Si no hay barrios de esa comuna en el Excel, usar nombre del GeoJSON
-                    nombre_final = props.get("NOMBRE", b_limpio)
-                
+            match = encontrar_mejor_match(b_limpio, list(barrios_df_norm.keys()))
+            nombre_final = barrios_df_norm.get(match)
             if nombre_final and nombre_final != st.session_state["barrio_click"]:
                 st.session_state["barrio_click"] = nombre_final
-                st.session_state["_abrir_modal_barrio"] = True
                 st.rerun()
 
-if st.session_state.pop("_abrir_var_detalle", False):
-    var_det = st.session_state.get("_var_detalle")
-    barrio_det = st.session_state.get("_barrio_detalle") or st.session_state.get("barrio_click")
-    comuna_det = st.session_state.get("_comuna_detalle") or st.session_state.get("comuna_click")
-    if var_det and barrio_det and comuna_det:
-        st.session_state.pop("_det_estratos_sel", None)
-        _df_modal = filtrar_datos_barrio_seleccionado(df_base)
-        modal_detalle_variable(_df_modal, var_det, barrio_det, comuna_det)
-
-elif st.session_state.pop("_abrir_modal_barrio", False):
-    if (
-        modo == "barrios"
-        and st.session_state.get("barrio_click")
-        and st.session_state.get("comuna_click")
-    ):
-        st.session_state.pop("_modal_res_chart", None)
-        st.session_state["_modal_estratos_sel"] = []
-        _df_modal = filtrar_datos_barrio_seleccionado(df_base)
-        modal_estadisticas_barrio(
-            _df_modal,
-            st.session_state["barrio_click"],
-            st.session_state["comuna_click"],
-        )
+st.markdown("<br><br>", unsafe_allow_html=True)
