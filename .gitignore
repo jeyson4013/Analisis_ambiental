@@ -1,0 +1,33 @@
+# Entorno virtual Python
+env/
+venv/
+.venv/
+
+# Caché de Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Dependencias Node.js
+node_modules/
+
+# Claude Code (configuración local)
+.claude/
+
+# Streamlit cache
+.streamlit/secrets.toml
+
+# Variables de entorno y secretos
+.env
+*.env
+secrets.*
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+*.swp
+*.swo
