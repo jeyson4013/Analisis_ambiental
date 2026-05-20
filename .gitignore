@@ -1,19 +1,33 @@
-# Entorno virtual
+# Entorno virtual Python
 env/
 venv/
 .venv/
 
-# Cache de Python
+# Caché de Python
 __pycache__/
 *.pyc
 *.pyo
+*.pyd
 
-# Scripts temporales de análisis
-scratch/
+# Dependencias Node.js
+node_modules/
 
-# Archivos temporales de Excel (cuando está abierto)
-~$*.xlsx
+# Claude Code (configuración local)
+.claude/
 
-# Archivos de sistema
+# Streamlit cache
+.streamlit/secrets.toml
+
+# Variables de entorno y secretos
+.env
+*.env
+secrets.*
+
+# Sistema operativo
 .DS_Store
 Thumbs.db
+desktop.ini
+
+# Editor
+*.swp
+*.swo
