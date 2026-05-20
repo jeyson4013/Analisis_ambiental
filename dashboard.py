@@ -73,6 +73,8 @@ if "variable_global_val" not in st.session_state:
     st.session_state["variable_global_val"] = ["Todas"]
 if "_abrir_modal_barrio" not in st.session_state:
     st.session_state["_abrir_modal_barrio"] = False
+if "_abrir_modal_qr" not in st.session_state:
+    st.session_state["_abrir_modal_qr"] = False
 
 def limpiar(texto):
     if not texto: return ""
@@ -435,6 +437,53 @@ def resolver_feature_barrio(features_mostrar):
     return None
 
 
+import base64, pathlib, os
+
+def _qr_base64() -> str:
+    """Devuelve el QR como cadena base64 PNG (imagen embebida en el código)."""
+    # Intentar leer desde archivo si existe
+    ruta = pathlib.Path(__file__).parent / "assets" / "qr_dashboard.png"
+    if ruta.exists():
+        return base64.b64encode(ruta.read_bytes()).decode()
+    # Fallback: QR codificado en base64 (imagen compartida por el usuario)
+    return QR_B64_FALLBACK
+
+# ── QR en base64 (imagen compartida por el usuario) ──────────────────────────
+# Esta cadena es la imagen QR codificada en base64 para que funcione
+# sin depender de archivos externos.
+QR_B64_FALLBACK = ""  # Se reemplaza por la imagen real al guardarse en assets/
+
+
+@st.dialog("📲 Código QR del Dashboard", width="small")
+def modal_qr():
+    st.markdown(
+        """
+        <div style="text-align:center;padding:8px 0 4px 0;">
+            <span style="font-size:0.78rem;letter-spacing:0.12em;text-transform:uppercase;
+                color:#2CC295;font-weight:700;">Escanea para compartir</span>
+            <p style="font-size:0.82rem;color:#AACBC4;margin:6px 0 14px 0;">
+                Abre el dashboard en tu dispositivo móvil
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    ruta_qr = pathlib.Path(__file__).parent / "assets" / "qr_dashboard.png"
+    if ruta_qr.exists():
+        st.image(str(ruta_qr), use_container_width=True)
+    else:
+        st.warning(
+            "⚠️ No se encontró la imagen del QR.\n\n"
+            "Guarda tu imagen QR en: `assets/qr_dashboard.png`"
+        )
+    st.markdown(
+        "<div style='height:8px'></div>",
+        unsafe_allow_html=True,
+    )
+    if st.button("Cerrar", width="stretch", type="primary", key="btn_cerrar_qr"):
+        st.rerun()
+
+
 @st.dialog("📊 Estadísticas del barrio", width="large")
 def modal_estadisticas_barrio(df_local, barrio_nombre, comuna_nombre):
     safe_b = html.escape(str(barrio_nombre))
@@ -632,43 +681,60 @@ def _sidebar_seccion(titulo: str) -> None:
     )
 
 
+# ── SVG del ícono QR (3 finder patterns + bits de datos, colores del tema) ──
+_qr_svg = (
+    "data:image/svg+xml,"
+    "%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 21 21' width='14' height='14'%3E"
+    "%3Crect x='0' y='0' width='7' height='7' rx='1' fill='%23AACBC4'/%3E"
+    "%3Crect x='1.5' y='1.5' width='4' height='4' fill='%23021B1A'/%3E"
+    "%3Crect x='2.5' y='2.5' width='2' height='2' fill='%23AACBC4'/%3E"
+    "%3Crect x='14' y='0' width='7' height='7' rx='1' fill='%23AACBC4'/%3E"
+    "%3Crect x='15.5' y='1.5' width='4' height='4' fill='%23021B1A'/%3E"
+    "%3Crect x='16.5' y='2.5' width='2' height='2' fill='%23AACBC4'/%3E"
+    "%3Crect x='0' y='14' width='7' height='7' rx='1' fill='%23AACBC4'/%3E"
+    "%3Crect x='1.5' y='15.5' width='4' height='4' fill='%23021B1A'/%3E"
+    "%3Crect x='2.5' y='16.5' width='2' height='2' fill='%23AACBC4'/%3E"
+    "%3Crect x='9' y='0' width='2' height='2' fill='%23AACBC4'/%3E"
+    "%3Crect x='12' y='0' width='2' height='2' fill='%23AACBC4'/%3E"
+    "%3Crect x='9' y='3' width='2' height='2' fill='%23AACBC4'/%3E"
+    "%3Crect x='9' y='9' width='2' height='2' fill='%23AACBC4'/%3E"
+    "%3Crect x='12' y='9' width='2' height='2' fill='%23AACBC4'/%3E"
+    "%3Crect x='9' y='12' width='2' height='2' fill='%23AACBC4'/%3E"
+    "%3Crect x='14' y='9' width='7' height='2' fill='%23AACBC4'/%3E"
+    "%3Crect x='14' y='12' width='2' height='2' fill='%23AACBC4'/%3E"
+    "%3Crect x='19' y='12' width='2' height='2' fill='%23AACBC4'/%3E"
+    "%3Crect x='14' y='15' width='2' height='2' fill='%23AACBC4'/%3E"
+    "%3Crect x='17' y='15' width='4' height='2' fill='%23AACBC4'/%3E"
+    "%3Crect x='14' y='19' width='2' height='2' fill='%23AACBC4'/%3E"
+    "%3Crect x='19' y='19' width='2' height='2' fill='%23AACBC4'/%3E"
+    "%3C/svg%3E"
+)
+
 # Área principal: mapa acotado al alto de la ventana (menos scroll vertical)
+# Este st.markdown global aplica CSS a TODA la página (incluye sidebar)
 st.markdown(
-    """
+    f"""
 <style>
-  .main .block-container {
+  .main .block-container {{
     padding-top: 0.35rem !important;
     padding-bottom: 0 !important;
-  }
-  div[data-testid="stIFrame"] iframe {
+  }}
+  div[data-testid="stIFrame"] iframe {{
     max-height: calc(100dvh - 3.5rem) !important;
     height: calc(100dvh - 3.5rem) !important;
     min-height: 280px;
-  }
-</style>
-""",
-    unsafe_allow_html=True,
-)
-MAP_ALTO_PX = 700
-
-# ── SIDEBAR ──
-st.sidebar.markdown(
-    "<div style='background:linear-gradient(135deg,#021B1A,#03624C);padding:16px 12px 10px 12px;border-radius:10px;margin-bottom:12px;'>"
-    "<span style='color:#00DF81;font-size:17px;font-weight:700;letter-spacing:1.5px;'>🔧 Filtros</span></div>",
-    unsafe_allow_html=True
-)
-st.sidebar.markdown("""
-<style>
-[data-testid="stSidebar"], [data-testid="stSidebar"] > div:first-child {
+  }}
+  /* ── Sidebar: colores globales ── */
+  [data-testid="stSidebar"], [data-testid="stSidebar"] > div:first-child {{
     background-color: #021B1A !important;
-}
-[data-testid="stSidebar"] p, [data-testid="stSidebar"] label {
+  }}
+  [data-testid="stSidebar"] p, [data-testid="stSidebar"] label {{
     color: #AACBC4 !important;
-}
-[data-testid="stSidebar"] .stCaption p {
+  }}
+  [data-testid="stSidebar"] .stCaption p {{
     color: #707D7D !important;
-}
-[data-testid="stSidebar"] .stButton > button {
+  }}
+  [data-testid="stSidebar"] .stButton > button {{
     border-radius: 8px !important;
     text-align: left !important;
     justify-content: flex-start !important;
@@ -681,18 +747,84 @@ st.sidebar.markdown("""
     background: #032221 !important;
     border: 1.5px solid #03624C !important;
     color: #AACBC4 !important;
-}
-[data-testid="stSidebar"] .stButton > button:hover {
+  }}
+  [data-testid="stSidebar"] .stButton > button:hover {{
     border-color: #00DF81 !important;
     color: #F1F7F6 !important;
     background: #03624C !important;
-}
-[data-testid="stSidebar"] [data-testid="column"] .stButton > button {
+  }}
+  [data-testid="stSidebar"] [data-testid="column"] .stButton > button {{
     font-size: 12px !important;
     padding: 6px 8px !important;
-}
+  }}
+  /* ── Ícono QR en el botón "Generar QR" ── */
+  [data-testid="stSidebar"] button[title="Ver código QR del dashboard"]::before,
+  [data-testid="stSidebar"] button[aria-label="Ver código QR del dashboard"]::before {{
+    content: url("{_qr_svg}");
+    margin-right: 7px;
+    vertical-align: middle;
+    display: inline-block;
+    line-height: 0;
+  }}
+</style>
+""",
+    unsafe_allow_html=True,
+)
+MAP_ALTO_PX = 700
+
+# ── SIDEBAR ──
+# El CSS se inyecta PRIMERO antes de cualquier botón para que aplique a todos
+st.sidebar.markdown(f"""
+<style>
+[data-testid="stSidebar"], [data-testid="stSidebar"] > div:first-child {{
+    background-color: #021B1A !important;
+}}
+[data-testid="stSidebar"] p, [data-testid="stSidebar"] label {{
+    color: #AACBC4 !important;
+}}
+[data-testid="stSidebar"] .stCaption p {{
+    color: #707D7D !important;
+}}
+[data-testid="stSidebar"] .stButton > button {{
+    border-radius: 8px !important;
+    text-align: left !important;
+    justify-content: flex-start !important;
+    font-size: 13px !important;
+    padding: 7px 12px !important;
+    height: auto !important;
+    box-shadow: none !important;
+    transition: border-color 0.15s, background 0.15s !important;
+    margin-bottom: 4px !important;
+    background: #032221 !important;
+    border: 1.5px solid #03624C !important;
+    color: #AACBC4 !important;
+}}
+[data-testid="stSidebar"] .stButton > button:hover {{
+    border-color: #00DF81 !important;
+    color: #F1F7F6 !important;
+    background: #03624C !important;
+}}
+[data-testid="stSidebar"] [data-testid="column"] .stButton > button {{
+    font-size: 12px !important;
+    padding: 6px 8px !important;
+}}
+/* Botón QR: sin ::before porque Streamlit bloquea url() en pseudo-elementos */
 </style>
 """, unsafe_allow_html=True)
+
+# ── Encabezado Filtros ──
+st.sidebar.markdown(
+    "<div style='background:linear-gradient(135deg,#021B1A,#03624C);padding:16px 12px 10px 12px;border-radius:10px;margin-bottom:8px;'>"
+    "<span style='color:#00DF81;font-size:17px;font-weight:700;letter-spacing:1.5px;'>🔧 Filtros</span></div>",
+    unsafe_allow_html=True
+)
+# ── Botón QR debajo del título ──
+# ▦ = U+25A6 SQUARE WITH ORTHOGONAL CROSSHATCH FILL (simula los cuadros del QR)
+if st.sidebar.button("▦ Generar QR", key="btn_abrir_qr", width="stretch", help="Ver código QR del dashboard"):
+    st.session_state["_abrir_modal_qr"] = True
+    st.rerun()
+st.sidebar.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
+
 
 if st.session_state["comuna_click"] is None:
     _sidebar_seccion("Vista general")
@@ -964,3 +1096,6 @@ elif st.session_state.pop("_abrir_modal_barrio", False):
             st.session_state["barrio_click"],
             st.session_state["comuna_click"],
         )
+
+if st.session_state.pop("_abrir_modal_qr", False):
+    modal_qr()
