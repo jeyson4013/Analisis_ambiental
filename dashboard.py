@@ -42,6 +42,16 @@ class FitBoundsYLimiteZoomSalida(MacroElement):
 
 st.set_page_config(page_title="Dashboard Ambiental Medellín", layout="wide")
 
+if "modal_detalle_runs_this_run" not in st.session_state:
+    st.session_state["modal_detalle_runs_this_run"] = False
+if "modal_detalle_abierto" not in st.session_state:
+    st.session_state["modal_detalle_abierto"] = False
+
+if not st.session_state.get("modal_detalle_runs_this_run", False):
+    st.session_state["modal_detalle_abierto"] = False
+
+st.session_state["modal_detalle_runs_this_run"] = False
+
 COLORES_COMUNAS = [
     "#e74c3c", "#e67e22", "#f1c40f", "#2ecc71", "#1abc9c",
     "#3498db", "#9b59b6", "#e91e63", "#00bcd4", "#8bc34a",
@@ -182,6 +192,11 @@ def render_variable_btns(opciones, val_actual, key_prefix, state_key):
                 if len(current) > 3:
                     current.pop(0)
                 st.session_state[state_key] = current
+            
+            if st.session_state.get("modal_detalle_abierto") and op != "Todas":
+                st.session_state["_var_detalle"] = op
+                st.session_state["_abrir_var_detalle"] = True
+                
             st.rerun()
 
 @st.cache_data(show_spinner="Cargando datos...")
@@ -306,15 +321,19 @@ def figuras_estadisticas_barrio(df_local, variable_activa, estratos_sel=None, al
     fig1 = None
     if resultados:
         df_plot1 = pd.DataFrame(resultados).sort_values("Porcentaje Negativo", ascending=True)
-        color_map_vars = {v: COLORES_VARIABLES.get(v, {}).get("color", "#2CC295") for v in variables}
         fig1 = px.bar(
             df_plot1,
             x="Porcentaje Negativo",
             y="Variable",
             orientation="h",
             title="Percepción negativa por variable — clic en barra para detalle",
-            color="Variable",
-            color_discrete_map=color_map_vars,
+            color="Porcentaje Negativo",
+            color_continuous_scale=[
+                [0.0, "#FFC107"],  # Amarillo-ámbar vibrante
+                [0.5, "#FF6F00"],  # Naranja vibrante
+                [1.0, "#D50000"],  # Rojo vibrante
+            ],
+            range_color=[0, 100],
             text="Porcentaje Negativo",
         )
         fig1.update_traces(texttemplate="%{text:.1f}%", textposition="outside")
@@ -327,6 +346,7 @@ def figuras_estadisticas_barrio(df_local, variable_activa, estratos_sel=None, al
             yaxis=dict(title=""),
             font=dict(size=12, color="#021B1A"),
             showlegend=False,
+            coloraxis_showscale=False,
         )
 
     df_long = df_filt.melt(
@@ -591,8 +611,104 @@ def modal_estadisticas_barrio(df_local, barrio_nombre, comuna_nombre):
         st.rerun()
 
 
+DETALLES_ANALISIS = {
+    "Aire": {
+        "titulo": "🌫️ Calidad del Aire",
+        "html": """
+<p style="font-weight: 700; color: #F1F7F6; margin-top: 0; margin-bottom: 12px; font-size: 1.05rem;">Análisis con datos</p>
+<p style="margin-bottom: 10px;">El crecimiento vehicular es uno de los principales factores de contaminación atmosférica.</p>
+<p style="margin-bottom: 10px;">Medellín presenta una alta densidad vehicular comparada con otras ciudades.</p>
+<p style="margin-bottom: 6px;">El aumento del parque automotor incrementa:</p>
+<ul style="margin-top: 0; margin-bottom: 14px; padding-left: 20px; list-style-type: disc;">
+    <li style="margin-bottom: 4px;">material particulado,</li>
+    <li style="margin-bottom: 4px;">gases contaminantes,</li>
+    <li style="margin-bottom: 4px;">afectaciones respiratorias.</li>
+</ul>
+<p style="margin-bottom: 14px;">Las zonas más urbanizadas y con mayor tráfico son las más impactadas ambientalmente.</p>
+<p style="border-top: 1px solid rgba(44, 194, 149, 0.2); padding-top: 12px; margin-top: 12px; font-size: 0.92rem; color: #F1F7F6; line-height: 1.5;">
+En Medellín, el crecimiento vehicular y la alta densidad urbana afectan directamente la calidad del aire. El ICVEPC indica que actualmente existe aproximadamente 1 vehículo por cada 2 habitantes, aumentando la presión ambiental sobre la ciudad.
+</p>
+"""
+    },
+    "Ríos": {
+        "titulo": "🌊 Estado de los Ríos",
+        "html": """
+<p style="margin-bottom: 12px;">Más de 900 mil toneladas de basura generadas anualmente aumentan el riesgo de contaminación hídrica.</p>
+<p style="margin-bottom: 6px;">Menos del 30% de residuos se reutiliza, por lo que gran parte termina:</p>
+<ul style="margin-top: 0; margin-bottom: 14px; padding-left: 20px; list-style-type: disc;">
+    <li style="margin-bottom: 4px;">en rellenos,</li>
+    <li style="margin-bottom: 4px;">quebradas,</li>
+    <li style="margin-bottom: 4px;">drenajes urbanos.</li>
+</ul>
+<p style="margin-bottom: 6px;">El manejo inadecuado de escombros también afecta:</p>
+<ul style="margin-top: 0; margin-bottom: 6px; padding-left: 20px; list-style-type: disc;">
+    <li style="margin-bottom: 4px;">quebradas,</li>
+    <li style="margin-bottom: 4px;">alcantarillado,</li>
+    <li style="margin-bottom: 4px;">sistemas de drenaje.</li>
+</ul>
+"""
+    },
+    "Ruido": {
+        "titulo": "🔊 Contaminación Auditiva",
+        "html": """
+<p style="margin-bottom: 6px;">El 46% de los homicidios de 2024 estuvieron relacionados con:</p>
+<ul style="margin-top: 0; margin-bottom: 14px; padding-left: 20px; list-style-type: disc;">
+    <li style="margin-bottom: 4px;">problemas de convivencia,</li>
+    <li style="margin-bottom: 4px;">violencia intrafamiliar,</li>
+    <li style="margin-bottom: 4px;">feminicidios.</li>
+</ul>
+<p style="margin-bottom: 6px;">Se registraron:</p>
+<ul style="margin-top: 0; margin-bottom: 14px; padding-left: 20px; list-style-type: disc;">
+    <li style="margin-bottom: 4px;">12.515 denuncias por violencia intrafamiliar,</li>
+    <li style="margin-bottom: 4px;">4.599 casos de lesiones personales.</li>
+</ul>
+<p style="margin-bottom: 6px;">El ruido se relaciona con:</p>
+<ul style="margin-top: 0; margin-bottom: 6px; padding-left: 20px; list-style-type: disc;">
+    <li style="margin-bottom: 4px;">conflictos vecinales,</li>
+    <li style="margin-bottom: 4px;">estrés urbano,</li>
+    <li style="margin-bottom: 4px;">deterioro de convivencia.</li>
+</ul>
+"""
+    },
+    "Basuras": {
+        "titulo": "🗑️ Manejo de Basuras",
+        "html": """
+<p style="margin-bottom: 10px;">Medellín generó más de 900.000 toneladas de residuos sólidos en 2023.</p>
+<p style="margin-bottom: 10px;">Cada habitante produce más de 1 kg de basura diaria.</p>
+<p style="margin-bottom: 10px;">La meta ODS para 2030 es solo 0,3 kg por persona/día, por lo que Medellín produce más de 3 veces la meta internacional.</p>
+<p style="margin-bottom: 10px;">Menos del 30% de residuos aprovechables son reutilizados.</p>
+<p style="margin-bottom: 10px;">El 80% de la población está satisfecha con la recolección de basura.</p>
+<p style="margin-bottom: 6px;">Pero solo:</p>
+<ul style="margin-top: 0; margin-bottom: 14px; padding-left: 20px; list-style-type: disc;">
+    <li style="margin-bottom: 4px;">33% aprueba la limpieza de calles,</li>
+    <li style="margin-bottom: 4px;">31% aprueba el manejo de escombros.</li>
+</ul>
+<p style="margin-bottom: 6px;">El relleno sanitario La Pradera tendría capacidad solo hasta 2030.</p>
+"""
+    },
+    "Contaminación Visual": {
+        "titulo": "👁️ Contaminación Visual",
+        "html": """
+<ul style="margin-top: 0; margin-bottom: 12px; padding-left: 20px; list-style-type: disc;">
+    <li style="margin-bottom: 10px;">
+        El crecimiento urbano acelerado genera:
+        <ul style="margin-top: 4px; padding-left: 16px; list-style-type: circle; color: #707D7D;">
+            <li style="margin-bottom: 2px;">saturación publicitaria,</li>
+            <li style="margin-bottom: 2px;">ocupación desordenada del espacio público,</li>
+            <li style="margin-bottom: 2px;">acumulación de escombros y cables.</li>
+        </ul>
+    </li>
+    <li style="margin-bottom: 10px;">Solo el 33% de ciudadanos percibe adecuada limpieza de calles.</li>
+    <li style="margin-bottom: 6px;">El bajo indicador refleja percepción negativa del entorno urbano.</li>
+</ul>
+"""
+    }
+}
+
 @st.dialog("📊 Detalle por variable", width="large")
 def modal_detalle_variable(df_local, variable_nombre, barrio_nombre, comuna_nombre):
+    st.session_state["modal_detalle_runs_this_run"] = True
+    st.session_state["modal_detalle_abierto"] = True
     safe_v = html.escape(str(variable_nombre))
     safe_b = html.escape(str(barrio_nombre))
     safe_c = html.escape(str(comuna_nombre))
@@ -626,6 +742,7 @@ def modal_detalle_variable(df_local, variable_nombre, barrio_nombre, comuna_nomb
     if df_local.empty:
         st.info("No hay registros para esta variable.")
         if st.button("← Volver", width="stretch"):
+            st.session_state["modal_detalle_abierto"] = False
             st.session_state["_abrir_modal_barrio"] = True
             st.rerun()
         return
@@ -662,12 +779,130 @@ def modal_detalle_variable(df_local, variable_nombre, barrio_nombre, comuna_nomb
             st.caption("Sin datos por estrato.")
     with tab2:
         if fig3:
-            st.plotly_chart(fig3, width="stretch", config=cfg)
+            col_chart, col_text = st.columns([1, 1], gap="medium")
+            with col_chart:
+                st.plotly_chart(fig3, use_container_width=True, config=cfg)
+            with col_text:
+                info_analisis = DETALLES_ANALISIS.get(variable_nombre, {"titulo": variable_nombre, "html": ""})
+                titulo_var = info_analisis["titulo"]
+                texto_var = info_analisis["html"]
+                box_html = f"""<div class="analysis-box" style="background: linear-gradient(135deg, #011211 0%, #02362b 50%, #0e4f40 100%); border: 1.5px solid {col_color}aa; border-radius: 12px; padding: 1.25rem; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05); color: #F1F7F6; max-height: 360px; overflow-y: auto; font-family: inherit; animation: fadeIn 0.4s ease-out;">
+<style>
+@keyframes fadeIn {{
+from {{ opacity: 0; transform: translateY(10px); }}
+to {{ opacity: 1; transform: translateY(0); }}
+}}
+.analysis-box::-webkit-scrollbar {{
+width: 6px;
+}}
+.analysis-box::-webkit-scrollbar-track {{
+background: rgba(2, 27, 26, 0.5);
+border-radius: 10px;
+}}
+.analysis-box::-webkit-scrollbar-thumb {{
+background: {col_color}88;
+border-radius: 10px;
+}}
+.analysis-box::-webkit-scrollbar-thumb:hover {{
+background: {col_color};
+}}
+</style>
+<div style="display: flex; align-items: center; gap: 8px; border-bottom: 1px solid {col_color}44; padding-bottom: 8px; margin-bottom: 12px;">
+<span style="font-size: 1.25rem; font-weight: 700;">{titulo_var}</span>
+</div>
+<div style="font-size: 0.92rem; line-height: 1.6; color: #AACBC4;">
+{texto_var}
+</div>
+</div>"""
+                st.markdown(box_html, unsafe_allow_html=True)
         else:
             st.caption("Sin datos para la distribución.")
     st.divider()
     if st.button("← Volver", width="stretch", type="primary"):
+        st.session_state["modal_detalle_abierto"] = False
         st.session_state["_abrir_modal_barrio"] = True
+        st.rerun()
+
+
+@st.dialog("ℹ️ Acerca de este dashboard", width="large")
+def modal_acerca_de():
+    st.markdown("""
+<div style="background: linear-gradient(135deg, #021B1A 0%, #03624C 55%, #17876D 100%); color: #F1F7F6; padding: 1.1rem 1.25rem; border-radius: 12px; margin-bottom: 1rem; box-shadow: 0 8px 24px rgba(0,0,0,0.4);">
+<div style="font-size:0.75rem;letter-spacing:0.14em;text-transform:uppercase;color:#2CC295;">Dashboard Ambiental · Medellín</div>
+<div style="font-size:1.35rem;font-weight:700;margin-top:0.35rem;">🌿 Percepción Ambiental Ciudadana</div>
+<div style="font-size:0.9rem;margin-top:0.25rem;color:#AACBC4;">Análisis multivariado de calidad ambiental por barrio y comuna</div>
+</div>
+""", unsafe_allow_html=True)
+
+    st.markdown("""
+<div style="background:#021B1A;border:1px solid #03624C;border-radius:10px;padding:1rem 1.25rem;margin-bottom:0.85rem;">
+<p style="color:#2CC295;font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.10em;margin:0 0 8px 0;border-bottom:1px solid #03624C;padding-bottom:6px;">📋 Sobre el proyecto</p>
+<p style="color:#AACBC4;font-size:0.92rem;line-height:1.65;margin:0;">Este dashboard interactivo visualiza la <strong style="color:#F1F7F6;">percepción ciudadana sobre cinco variables ambientales</strong> en Medellín: calidad del <em>Aire</em>, estado de los <em>Ríos</em>, <em>Ruido</em>, manejo de <em>Basuras</em> y <em>Contaminación Visual</em>. Los datos provienen de la Encuesta de Calidad de Vida 2025 de Medellín Cómo Vamos, aplicada a una muestra representativa de hogares en todas las comunas y corregimientos de la ciudad. El sistema permite explorar geográficamente las respuestas, comparar barrios y estratos socioeconómicos, y detectar patrones espaciales de insatisfacción ambiental.</p>
+</div>
+""", unsafe_allow_html=True)
+
+    st.markdown("""
+<div style="background:#021B1A;border:1px solid #03624C;border-radius:10px;padding:1rem 1.25rem;margin-bottom:0.85rem;">
+<p style="color:#2CC295;font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.10em;margin:0 0 8px 0;border-bottom:1px solid #03624C;padding-bottom:6px;">⚙️ Estandarización y metodología</p>
+<p style="color:#AACBC4;font-size:0.92rem;line-height:1.65;margin:0 0 10px 0;">Las respuestas originales de la encuesta (escala Likert ordinal) fueron <strong style="color:#F1F7F6;">recodificadas y estandarizadas</strong> en tres categorías comparables:</p>
+<ul style="color:#AACBC4;font-size:0.92rem;line-height:1.8;margin:0 0 10px 0;padding-left:20px;">
+<li><strong style="color:#2ecc71;">Buena</strong> — percepción positiva de la variable ambiental.</li>
+<li><strong style="color:#f1c40f;">Regular</strong> — percepción intermedia o neutral.</li>
+<li><strong style="color:#e74c3c;">Mala</strong> — percepción negativa o de deterioro.</li>
+</ul>
+<p style="color:#AACBC4;font-size:0.92rem;line-height:1.65;margin:0;">La normalización siguió el enfoque de <strong style="color:#F1F7F6;">análisis multivariado descriptivo</strong> (Rencher, 2002), agrupando respuestas por barrio y estrato para obtener la categoría dominante en cada unidad geográfica. Los valores faltantes fueron excluidos del cálculo proporcional para no sesgar los índices de percepción. La visualización geográfica se construyó sobre capas GeoJSON oficiales de Medellín, emparejadas con los registros de la encuesta mediante coincidencia difusa de nombres (fuzzy matching).</p>
+</div>
+""", unsafe_allow_html=True)
+
+    st.markdown("""
+<div style="background:#021B1A;border:1px solid #03624C;border-radius:10px;padding:1rem 1.25rem;margin-bottom:0.85rem;">
+<p style="color:#2CC295;font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.10em;margin:0 0 8px 0;border-bottom:1px solid #03624C;padding-bottom:6px;">📊 Resultados principales</p>
+<ul style="color:#AACBC4;font-size:0.92rem;line-height:1.8;margin:0;padding-left:20px;">
+<li>La variable <strong style="color:#F1F7F6;">Aire</strong> presenta la mayor dispersión de percepción entre comunas, con zonas de alta densidad vehicular mostrando predominio de calificaciones <em>Malas</em>.</li>
+<li>El estado de los <strong style="color:#F1F7F6;">Ríos</strong> refleja una percepción negativa generalizada, vinculada al manejo inadecuado de residuos sólidos y escombros en áreas periféricas.</li>
+<li>La <strong style="color:#F1F7F6;">Contaminación por Ruido</strong> concentra la mayor proporción de conflictos vecinales reportados, con correlación directa con la densidad poblacional por barrio.</li>
+<li>El manejo de <strong style="color:#F1F7F6;">Basuras</strong> muestra alta satisfacción en recolección (≈80%) pero baja aprobación en limpieza de calles (33%) y gestión de escombros (31%).</li>
+<li>La <strong style="color:#F1F7F6;">Contaminación Visual</strong> es la variable con menor percepción negativa absoluta, aunque supera el umbral crítico en comunas de alta densidad comercial.</li>
+</ul>
+</div>
+""", unsafe_allow_html=True)
+
+    st.markdown("""
+<div style="background:#021B1A;border:1px solid #03624C;border-radius:10px;padding:1rem 1.25rem;margin-bottom:0.85rem;">
+<p style="color:#2CC295;font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.10em;margin:0 0 8px 0;border-bottom:1px solid #03624C;padding-bottom:6px;">📚 Bibliografía</p>
+<ul style="color:#AACBC4;font-size:0.88rem;line-height:1.8;margin:0;padding-left:20px;">
+<li>Medellín Cómo Vamos. <em>Medellín se mide: Calidad de Vida y Percepción Ciudadana 2025</em>. Dataset: <code style="background:#032221;padding:1px 5px;border-radius:4px;">ECV_2025_Limpio.csv</code>.</li>
+<li>Rencher, A. C. <em>Methods of Multivariate Analysis</em>, 2.ª ed. Wiley, 2002.</li>
+<li>Caballero G., L. J. <em>5.1 — Métodos estadísticos para análisis de datos ordinales en ciencias sociales</em>.</li>
+</ul>
+</div>
+""", unsafe_allow_html=True)
+
+    st.markdown("""
+<div style="background:#021B1A;border:1px solid #03624C;border-radius:10px;padding:1rem 1.25rem;margin-bottom:0.5rem;">
+<p style="color:#2CC295;font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.10em;margin:0 0 8px 0;border-bottom:1px solid #03624C;padding-bottom:6px;">👥 Creadores y Asesores</p>
+<div style="display:flex;gap:2rem;flex-wrap:wrap;">
+<div style="flex:1;min-width:200px;">
+<p style="color:#F1F7F6;font-size:0.88rem;font-weight:700;margin:0 0 8px 0;text-transform:uppercase;letter-spacing:0.05em;">Creadores</p>
+<ul style="color:#AACBC4;font-size:0.88rem;line-height:1.6;margin:0;padding-left:20px;">
+<li>Camilo Carmona</li>
+<li>Keyner Gil</li>
+<li>Jeyson González</li>
+<li>Marisol Roche</li>
+</ul>
+</div>
+<div style="flex:1;min-width:200px;">
+<p style="color:#F1F7F6;font-size:0.88rem;font-weight:700;margin:0 0 8px 0;text-transform:uppercase;letter-spacing:0.05em;">Asesores</p>
+<ul style="color:#AACBC4;font-size:0.88rem;line-height:1.6;margin:0;padding-left:20px;">
+<li>Ingry Gómez</li>
+<li>Juan Zapata</li>
+</ul>
+</div>
+</div>
+</div>
+""", unsafe_allow_html=True)
+
+    if st.button("Cerrar", width="stretch", type="primary"):
         st.rerun()
 
 
@@ -753,6 +988,16 @@ st.markdown(
     color: #F1F7F6 !important;
     background: #03624C !important;
   }}
+  [data-testid="stSidebar"] .stButton > button:active,
+  [data-testid="stSidebar"] .stButton > button:focus,
+  [data-testid="stSidebar"] .stButton > button:focus-visible,
+  [data-testid="stSidebar"] .stButton > button:focus:not(:focus-visible) {{
+    background: #032221 !important;
+    border-color: #03624C !important;
+    color: #AACBC4 !important;
+    box-shadow: none !important;
+    outline: none !important;
+  }}
   [data-testid="stSidebar"] [data-testid="column"] .stButton > button {{
     font-size: 12px !important;
     padding: 6px 8px !important;
@@ -776,16 +1021,24 @@ MAP_ALTO_PX = 700
 # El CSS se inyecta PRIMERO antes de cualquier botón para que aplique a todos
 st.sidebar.markdown(f"""
 <style>
-[data-testid="stSidebar"], [data-testid="stSidebar"] > div:first-child {{
+/* ── Sidebar fondo ── */
+[data-testid="stSidebar"],
+[data-testid="stSidebar"] > div:first-child {{
     background-color: #021B1A !important;
 }}
-[data-testid="stSidebar"] p, [data-testid="stSidebar"] label {{
+[data-testid="stSidebar"] p,
+[data-testid="stSidebar"] label {{
     color: #AACBC4 !important;
 }}
 [data-testid="stSidebar"] .stCaption p {{
     color: #707D7D !important;
 }}
-[data-testid="stSidebar"] .stButton > button {{
+
+/* ── Botones sidebar: estado normal ── */
+[data-testid="stSidebar"] button,
+[data-testid="stSidebar"] .stButton > button,
+[data-testid="stSidebar"] [data-testid="stBaseButton-secondary"],
+[data-testid="stSidebar"] [class*="stBaseButton"] {{
     border-radius: 8px !important;
     text-align: left !important;
     justify-content: flex-start !important;
@@ -796,21 +1049,53 @@ st.sidebar.markdown(f"""
     transition: border-color 0.15s, background 0.15s !important;
     margin-bottom: 4px !important;
     background: #032221 !important;
+    background-color: #032221 !important;
     border: 1.5px solid #03624C !important;
     color: #AACBC4 !important;
+    outline: none !important;
 }}
-[data-testid="stSidebar"] .stButton > button:hover {{
+
+/* ── Hover ── */
+[data-testid="stSidebar"] button:hover,
+[data-testid="stSidebar"] .stButton > button:hover,
+[data-testid="stSidebar"] [data-testid="stBaseButton-secondary"]:hover,
+[data-testid="stSidebar"] [class*="stBaseButton"]:hover {{
     border-color: #00DF81 !important;
     color: #F1F7F6 !important;
     background: #03624C !important;
+    background-color: #03624C !important;
 }}
+
+/* ── Active / Focus: sin fondo blanco ── */
+[data-testid="stSidebar"] button:active,
+[data-testid="stSidebar"] button:focus,
+[data-testid="stSidebar"] button:focus-visible,
+[data-testid="stSidebar"] .stButton > button:active,
+[data-testid="stSidebar"] .stButton > button:focus,
+[data-testid="stSidebar"] .stButton > button:focus-visible,
+[data-testid="stSidebar"] [data-testid="stBaseButton-secondary"]:active,
+[data-testid="stSidebar"] [data-testid="stBaseButton-secondary"]:focus,
+[data-testid="stSidebar"] [data-testid="stBaseButton-secondary"]:focus-visible,
+[data-testid="stSidebar"] [class*="stBaseButton"]:active,
+[data-testid="stSidebar"] [class*="stBaseButton"]:focus,
+[data-testid="stSidebar"] [class*="stBaseButton"]:focus-visible {{
+    background: #032221 !important;
+    background-color: #032221 !important;
+    border-color: #03624C !important;
+    color: #AACBC4 !important;
+    box-shadow: none !important;
+    outline: none !important;
+}}
+
+/* ── Botones en columnas del sidebar ── */
+[data-testid="stSidebar"] [data-testid="column"] button,
 [data-testid="stSidebar"] [data-testid="column"] .stButton > button {{
     font-size: 12px !important;
     padding: 6px 8px !important;
 }}
-/* Botón QR: sin ::before porque Streamlit bloquea url() en pseudo-elementos */
 </style>
 """, unsafe_allow_html=True)
+
 
 # ── Encabezado Filtros ──
 st.sidebar.markdown(
@@ -896,6 +1181,19 @@ if st.session_state["comuna_click"] is None:
             + "</span></div>",
             unsafe_allow_html=True,
         )
+
+# ── Botón Acerca de (parte inferior del sidebar) ──
+if "_abrir_modal_acerca" not in st.session_state:
+    st.session_state["_abrir_modal_acerca"] = False
+
+st.sidebar.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
+st.sidebar.markdown(
+    "<div style='border-top:1px solid #03624C;margin-bottom:8px;'></div>",
+    unsafe_allow_html=True,
+)
+if st.sidebar.button("ℹ️ Acerca de", key="btn_acerca_de", width="stretch", help="Información del proyecto y metodología"):
+    st.session_state["_abrir_modal_acerca"] = True
+    st.rerun()
 
 # ── MAPA ──
 modo = "comunas" if st.session_state["comuna_click"] is None else "barrios"
@@ -1099,3 +1397,9 @@ elif st.session_state.pop("_abrir_modal_barrio", False):
 
 if st.session_state.pop("_abrir_modal_qr", False):
     modal_qr()
+
+if st.session_state.pop("_abrir_modal_acerca", False):
+    modal_acerca_de()
+
+if not st.session_state.get("modal_detalle_runs_this_run", False):
+    st.session_state["modal_detalle_abierto"] = False
