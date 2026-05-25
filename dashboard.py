@@ -341,9 +341,9 @@ def figuras_estadisticas_barrio(df_local, variable_activa, estratos_sel=None, al
             margin=dict(l=8, r=48, t=52, b=8),
             height=altura,
             paper_bgcolor="rgba(0,0,0,0)",
-            plot_bgcolor="#F1F7F6",
-            xaxis=dict(title="% negativo", ticksuffix="%", showgrid=True, gridcolor="#AACBC4", range=[0, 100]),
-            yaxis=dict(title=""),
+            plot_bgcolor="rgba(0,0,0,0)",
+            xaxis=dict(title="% negativo", ticksuffix="%", showgrid=False, range=[0, 100]),
+            yaxis=dict(title="", showgrid=False),
             font=dict(size=12, color="#021B1A"),
             showlegend=False,
             coloraxis_showscale=False,
@@ -387,9 +387,9 @@ def figuras_estadisticas_barrio(df_local, variable_activa, estratos_sel=None, al
             margin=dict(l=8, r=8, t=48, b=72),
             height=altura + 40,
             paper_bgcolor="rgba(0,0,0,0)",
-            plot_bgcolor="#F1F7F6",
-            xaxis=dict(title="Estrato"),
-            yaxis=dict(title="%", ticksuffix="%", range=[0, 105]),
+            plot_bgcolor="rgba(0,0,0,0)",
+            xaxis=dict(title="Estrato", showgrid=False),
+            yaxis=dict(title="%", ticksuffix="%", range=[0, 105], showgrid=False),
             legend=dict(
                 orientation="h", yanchor="bottom", y=-0.42,
                 xanchor="center", x=0.5, title="", font=dict(size=10),
@@ -423,6 +423,7 @@ def figuras_estadisticas_barrio(df_local, variable_activa, estratos_sel=None, al
             height=altura,
             showlegend=False,
             paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
             font=dict(size=12, color="#021B1A"),
         )
     return fig1, fig2, fig3
