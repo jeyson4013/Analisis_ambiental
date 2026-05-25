@@ -389,7 +389,7 @@ def figuras_estadisticas_barrio(df_local, variable_activa, estratos_sel=None, al
             paper_bgcolor="rgba(0,0,0,0)",
             plot_bgcolor="rgba(0,0,0,0)",
             xaxis=dict(title="Estrato", showgrid=False),
-            yaxis=dict(title="%", ticksuffix="%", range=[0, 105], showgrid=False),
+            yaxis=dict(title="Porcentaje", ticksuffix="%", range=[0, 105], showgrid=False),
             legend=dict(
                 orientation="h", yanchor="bottom", y=-0.42,
                 xanchor="center", x=0.5, title="", font=dict(size=10),
