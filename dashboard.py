@@ -463,7 +463,7 @@ import base64, pathlib, os
 def _qr_base64() -> str:
     """Devuelve el QR como cadena base64 PNG (imagen embebida en el código)."""
     # Intentar leer desde archivo si existe
-    ruta = pathlib.Path(__file__).parent / "assets" / "qr_dashboard.png"
+    ruta = pathlib.Path(__file__).parent / "assets" / "qrPIA.jpeg"
     if ruta.exists():
         return base64.b64encode(ruta.read_bytes()).decode()
     # Fallback: QR codificado en base64 (imagen compartida por el usuario)
@@ -489,13 +489,13 @@ def modal_qr():
         """,
         unsafe_allow_html=True,
     )
-    ruta_qr = pathlib.Path(__file__).parent / "assets" / "qr_dashboard.png"
+    ruta_qr = pathlib.Path(__file__).parent / "assets" / "qrPIA.jpeg"
     if ruta_qr.exists():
         st.image(str(ruta_qr), use_container_width=True)
     else:
         st.warning(
             "⚠️ No se encontró la imagen del QR.\n\n"
-            "Guarda tu imagen QR en: `assets/qr_dashboard.png`"
+            "Guarda tu imagen QR en: `assets/qrPIA.jpeg`"
         )
     st.markdown(
         "<div style='height:8px'></div>",
