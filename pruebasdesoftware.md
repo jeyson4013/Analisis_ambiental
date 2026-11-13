@@ -13,19 +13,23 @@
 | Identificador | `PP-DAM-2026-001` |
 | Título | Plan de Pruebas del Dashboard Ambiental Medellín |
 | Tipo de documento | Plan de Pruebas de Proyecto (*Project Test Plan*) |
-| Versión | 1.0 |
+| Versión | 1.1 |
 | Estado | Borrador para aprobación |
-| Fecha de emisión | 10/11/2026 |
+| Fecha de emisión | 10/11/2026 (v1.1: 13/11/2026) |
 | Ubicación | Repositorio `jeyson4013/Analisis_ambiental` — archivo `pruebasdesoftware.md` |
 
 ### 1.2 Organización emisora y autores
 
 - **Organización emisora:** Equipo de desarrollo del proyecto *Análisis Ambiental — Percepción Ambiental Ciudadana de Medellín*.
-- **Autores:**
+- **Autores del proyecto original** (desarrollo del dashboard en el PIA de Inteligencia de Negocios; se citan como referencia):
   - Camilo Carmona
   - Keyner Gil
   - Jeyson González
   - Marisol Roche
+- **Autores del plan de pruebas** (curso Pruebas de Software; responsables de este documento y de su ejecución):
+  - Jeyson González
+  - Mateo
+  - Keyner Gil
 
 ### 1.3 Autoridad de aprobación
 
@@ -40,7 +44,8 @@
 | Versión | Fecha | Autor | Descripción del cambio |
 |---|---|---|---|
 | 0.1 | 10/11/2026 | Equipo de desarrollo | Creación del borrador inicial con base en las directrices del docente. |
-| 1.0 | — | Equipo de desarrollo | Versión para aprobación (pendiente). |
+| 1.0 | 10/11/2026 | Jeyson González | Plan completo publicado en `master` (PR #2). Pendiente de aprobación. |
+| 1.1 | 13/11/2026 | Keyner Gil | Equipo de pruebas de 3 personas (§1.2, §2.3, §3.3, §3.4, §7.1); capacidad recalculada (§6.2); nuevos casos CP-35 y CP-36 (§5.3); preparación de pruebas unitarias implementada en `tests/conftest.py` (§5.4); Anexo A con la primera ejecución de las pruebas automatizadas y el defecto DEF-001. |
 
 El documento se versiona en Git junto al código fuente. Cada modificación se realiza mediante *commit* con mensaje descriptivo y, para cambios de alcance, mediante *Pull Request* revisado por al menos un integrante distinto del autor.
 
@@ -72,7 +77,7 @@ El plan cubre el ciclo de pruebas de **3 semanas** sobre la versión del código
 **Declaración:** El proyecto **NO** aplica la norma ISO/IEC/IEEE 29119 de forma íntegra. Se declara **conformidad adaptada** (*tailored conformance*) conforme a lo permitido por la propia norma, justificada por:
 
 1. **Nivel de criticidad del software: BAJO.** El dashboard es una herramienta académica de visualización y consulta. No procesa transacciones, no gestiona datos personales identificables, no controla procesos físicos ni toma decisiones automatizadas que afecten a personas. Un fallo produce, en el peor caso, una visualización incorrecta o una interrupción del servicio.
-2. **Restricciones del proyecto:** ciclo de pruebas de **3 semanas**, equipo de 4 personas con dedicación parcial, sin presupuesto para herramientas comerciales ni entornos dedicados.
+2. **Restricciones del proyecto:** ciclo de pruebas de **3 semanas**, equipo de pruebas de 3 personas con dedicación parcial, sin presupuesto para herramientas comerciales ni entornos dedicados.
 
 **Procesos y documentos que se mantienen:**
 
@@ -164,7 +169,7 @@ El plan cubre el ciclo de pruebas de **3 semanas** sobre la versión del código
 
 **Restricciones:**
 - R-01: Ciclo total de **3 semanas** (10/11/2026 – 28/11/2026).
-- R-02: Equipo de 4 personas con dedicación parcial (≈ 8 h/semana por persona).
+- R-02: Equipo de pruebas de 3 personas (Jeyson González, Mateo, Keyner Gil) con dedicación parcial (≈ 8 h/semana por persona).
 - R-03: Sin herramientas comerciales; solo software libre (`pytest`, GitHub Issues).
 - R-04: La aplicación es un único script Streamlit, lo que dificulta pruebas unitarias aisladas (las funciones dependen de `st.session_state` y se ejecutan al importar el módulo).
 - R-05: La carpeta `env/` versionada en el repositorio contiene rutas absolutas de otra máquina y no es reutilizable; cada evaluador debe crear su propio entorno virtual.
@@ -174,7 +179,8 @@ El plan cubre el ciclo de pruebas de **3 semanas** sobre la versión del código
 | Parte interesada | Interés en las pruebas |
 |---|---|
 | Asesores académicos (Ingry Gómez, Juan Zapata) | Calidad del producto y cumplimiento del proceso ISO 29119 adaptado. |
-| Equipo de desarrollo (Camilo Carmona, Keyner Gil, Jeyson González, Marisol Roche) | Detectar y corregir defectos antes de la entrega. |
+| Equipo de desarrollo original (Camilo Carmona, Keyner Gil, Jeyson González, Marisol Roche) | Conocer los defectos detectados y corregirlos antes de la entrega. |
+| Equipo de pruebas (Jeyson González, Mateo, Keyner Gil) | Planificar, diseñar y ejecutar las pruebas; registrar defectos y su verificación. |
 | Usuarios finales (ciudadanía, estudiantes, tomadores de decisiones) | Información correcta, navegación clara y disponibilidad en web/móvil. |
 | Medellín Cómo Vamos (fuente de datos) | Representación fiel de los datos de la encuesta. |
 
@@ -265,7 +271,7 @@ El plan cubre el ciclo de pruebas de **3 semanas** sobre la versión del código
 | R-01 | Crítico | **Mitigar con pruebas (obligatorio)** | Pruebas unitarias del *matching* y verificación integral de todos los barrios del GeoJSON contra el Excel (CDP-01, CDP-02). |
 | R-02 | Alto | **Mitigar con pruebas (obligatorio)** | Pruebas unitarias exhaustivas de `map_categoria()` (CDP-03). |
 | R-03 | Alto | **Mitigar con pruebas (obligatorio)** | Comparación de porcentajes contra cálculo independiente (CDP-04, CDP-05). |
-| R-04 | Alto | **Mitigar con pruebas (obligatorio)** | Pruebas de valores de estrato enteros, decimales y nulos (CDP-06). |
+| R-04 | Alto | **Mitigar con pruebas (obligatorio)** | Pruebas de valores de estrato enteros, decimales y nulos (CDP-06). Resultado v1.1: CP-18 confirma el defecto DEF-001; CP-36 muestra que hoy es latente (Anexo A). |
 | R-05 | Alto | **Mitigar con pruebas (obligatorio)** | Pruebas de carga con archivos válidos, ausentes y corruptos (CDP-07). |
 | R-07 | Alto | **Mitigar con pruebas (obligatorio)** | Pruebas de transición de estados de navegación y modales (CDP-08). |
 | RP-01 | Alto | Mitigar con gestión | Priorizar ejecución por exposición (Crítico → Alto → Medio); reserva de 2 días en Semana 3. |
@@ -398,15 +404,17 @@ Técnicas seleccionadas de ISO/IEC/IEEE 29119-4:
 | CP-32 | Adivinación de errores | Equipo limpio con Python 3.11+ | Crear `venv`, `pip install -r requirements.txt`, `streamlit run dashboard.py` | Aplicación inicia sin errores; se registran versiones instaladas | Instalación |
 | CP-33 | Escenario | Despliegue accesible por URL | Escanear QR desde móvil y navegar E0 → E2 | Mapa y modal legibles y operables | Sistema |
 | CP-34 | Escenario | — | Ejecutar CP-20, CP-23 y CP-24 en Chrome, Firefox y Edge | Resultado idéntico en los tres navegadores | Sistema |
+| CP-35 | PCE / Adivinación de errores | `ECV_2025_Limpio.xlsx` (DP-01) | Para las 5 variables, comparar los valores únicos con el catálogo de 6 categorías y aplicar `map_categoria()` a cada valor | Ningún valor fuera del catálogo ni nulo; `map_categoria(v) == v` para todos | Integración |
+| CP-36 | PCE | `ECV_2025_Limpio.xlsx` (DP-01) | Revisar tipo, rango y nulos de la columna `11. Estrato` | Tipo entero, valores entre 1 y 6, 0 nulos | Integración |
 
 **Matriz de trazabilidad (Riesgo → Condición → Caso):**
 
 | Riesgo | Exposición | Condición(es) | Casos de prueba |
 |---|---|---|---|
 | R-01 | Crítico | CDP-01, CDP-02 | CP-01, CP-02, CP-03, CP-04, CP-05, CP-06, CP-07 |
-| R-02 | Alto | CDP-03 | CP-08, CP-09, CP-10 |
+| R-02 | Alto | CDP-03 | CP-08, CP-09, CP-10, CP-35 |
 | R-03 | Alto | CDP-04, CDP-05 | CP-11, CP-12, CP-13, CP-14, CP-15, CP-16 |
-| R-04 | Alto | CDP-06 | CP-17, CP-18, CP-19 |
+| R-04 | Alto | CDP-06 | CP-17, CP-18, CP-19, CP-36 |
 | R-05 | Alto | CDP-07 | CP-20, CP-21, CP-22 |
 | R-07 | Alto | CDP-08 | CP-23, CP-24, CP-25, CP-26, CP-27, CP-28 |
 | RP-02 | Alto | CDP-11 | CP-32 |
@@ -416,7 +424,7 @@ Técnicas seleccionadas de ISO/IEC/IEEE 29119-4:
 | R-16 | Medio | CDP-12 | CP-33, CP-34 |
 | R-09, R-10, R-11, R-12, R-14, R-15, R-17 | Bajo | — | Aceptados sin pruebas dedicadas (sección 4.3) |
 
-**Cobertura:** 100 % de los riesgos Críticos y Altos de producto tienen al menos una condición y un caso de prueba asociado.
+**Cobertura:** 100 % de los riesgos Críticos y Altos de producto tienen al menos una condición y un caso de prueba asociado. Desde la v1.1 el plan suma **36 casos**: CP-35 y CP-36 verifican que los datos reales del Excel cumplen lo que el código supone.
 
 ### 5.4 Requisitos de entorno y datos de prueba
 
@@ -432,13 +440,13 @@ Técnicas seleccionadas de ISO/IEC/IEEE 29119-4:
 | Control de versiones | Git / GitHub; ejecución sobre *commit* identificado y registrado en cada resultado. |
 | Registro de defectos | GitHub Issues con etiqueta `bug` y prioridad (`P1`–`P3`). |
 
-**Preparación para pruebas unitarias:** dado que `dashboard.py` ejecuta la interfaz al importarse, las funciones puras (`limpiar`, `encontrar_mejor_match`, `map_categoria`, `centroide_feature`, `bounds_from_features`, `figuras_estadisticas_barrio`) se probarán copiándolas o extrayéndolas a un módulo auxiliar (p. ej. `utils.py`), sin alterar su lógica.
+**Preparación para pruebas unitarias:** dado que `dashboard.py` ejecuta la interfaz al importarse, no se importa. `tests/conftest.py` lee `dashboard.py` con el módulo `ast`, extrae solo las funciones puras (`limpiar`, `encontrar_mejor_match`, `map_categoria`, `centroide_feature`, `bounds_from_features`, `figuras_estadisticas_barrio`) y las constantes que usan (`variables`, `COLOR_MAP_CATEG`, `CAT_ORDER`), y las ejecuta aisladas. Así `dashboard.py` no se modifica y las pruebas siempre ejercitan el código vigente, no una copia; si una función se renombra, la carga falla con un mensaje explícito. Las dependencias de prueba están en `requirements-test.txt` y se ejecutan con `python -m pytest -v` desde la raíz.
 
 **Datos de prueba:**
 
 | ID | Conjunto | Uso |
 |---|---|---|
-| DP-01 | `ECV_2025_Limpio.xlsx` (datos reales) | Pruebas de sistema e integración. |
+| DP-01 | `ECV_2025_Limpio.xlsx` (datos reales) | Pruebas de sistema e integración (incluye CP-35 y CP-36). |
 | DP-02 | `medellin_debug.geojson` (datos reales) | Pruebas de mapa e integración. |
 | DP-03 | DataFrames sintéticos construidos en `pytest` (respuestas controladas, estratos enteros/decimales/nulos) | CP-11 a CP-14, CP-17, CP-18. |
 | DP-04 | Listas de cadenas con tildes, eñes, símbolos, vacías y nulas | CP-01 a CP-05, CP-08 a CP-10. |
@@ -510,7 +518,7 @@ Técnica de estimación: **juicio de expertos del equipo + descomposición por a
 | | Contingencia (≈ 15 %) | 12 |
 | | **Total estimado** | **96 h-persona** |
 
-Capacidad disponible: 4 personas × 8 h/semana × 3 semanas = **96 h-persona**. La contingencia se libera para riesgos de exposición Media si no se consume.
+Capacidad disponible (v1.1): 3 personas × 8 h/semana × 3 semanas = **72 h-persona**, frente a 84 h estimadas (96 h con contingencia): **déficit de 12 h sin contingencia y de 24 h con ella**. Decisión pendiente del líder de pruebas: (a) aumentar la dedicación a ≈ 11 h/semana por persona, o (b) recortar casos de riesgo Medio y declararlo en §2.3. Parte de A-05, A-08 y A-09 ya se ejecutó el 13/11/2026 (Anexo A).
 
 ---
 
@@ -520,11 +528,11 @@ Capacidad disponible: 4 personas × 8 h/semana × 3 semanas = **96 h-persona**. 
 
 | Rol | Responsable | Suplente | Responsabilidades |
 |---|---|---|---|
-| Líder de pruebas | Jeyson González | Camilo Carmona | Plan de pruebas, seguimiento del cronograma, criterios de suspensión/finalización, informe final, contacto con asesores. |
-| Analista de riesgos y diseño | Marisol Roche | Keyner Gil | Matriz de riesgos, condiciones de prueba, casos y trazabilidad. |
-| Ingeniero de pruebas automatizadas | Keyner Gil | Jeyson González | Extracción de funciones, pruebas `pytest` (CP-01 a CP-14, CP-17, CP-18). |
-| Ejecutor de pruebas de sistema | Camilo Carmona | Marisol Roche | Pruebas manuales de UI, navegación, compatibilidad y móvil (CP-15, CP-16, CP-19 a CP-34). |
-| Gestor de configuración y defectos | Jeyson González | Keyner Gil | Congelamiento de versión, GitHub Issues, verificación de correcciones. |
+| Líder de pruebas | Jeyson González | Keyner Gil | Plan de pruebas, seguimiento del cronograma, criterios de suspensión/finalización, informe final, contacto con asesores. |
+| Analista de riesgos y diseño | Jeyson González | Mateo | Matriz de riesgos, condiciones de prueba, casos y trazabilidad. |
+| Ingeniero de pruebas automatizadas | Keyner Gil | Jeyson González | Carga de funciones puras (`tests/conftest.py`), pruebas `pytest` (CP-01 a CP-05, CP-08 a CP-14, CP-17, CP-18, CP-35, CP-36) e instalación limpia (CP-32). |
+| Ejecutor de pruebas de sistema | Mateo | Keyner Gil | Pruebas manuales de navegación, selector de variables, colores, compatibilidad y móvil (CP-23 a CP-31, CP-33, CP-34). |
+| Gestor de configuración y defectos | Jeyson González | Mateo | Congelamiento de versión, GitHub Issues, verificación de correcciones; pruebas de integración y exactitud de datos (CP-06, CP-07, CP-15, CP-16, CP-19 a CP-22). |
 | Desarrolladores (corrección) | Todo el equipo | — | Corrección de defectos asignados. |
 | Aprobadores | Ingry Gómez, Juan Zapata | — | Aprobación del plan, aceptación del informe y de riesgos residuales. |
 
@@ -571,3 +579,70 @@ Defectos / regresión                   ████     ██████
 Informe final                                       ████
 Hitos             H1 (14/11)  H2 (17/11)  H3 (21/11)  H4 (26/11)  H5 (28/11)
 ```
+
+---
+
+## Anexo A. Registro de ejecución — pruebas automatizadas (A-08, A-09)
+
+> Por la adaptación declarada en §2.3, el registro de ejecución se anexa a este plan en lugar de un documento separado.
+
+### A.1 Datos de la ejecución
+
+| Campo | Valor |
+|---|---|
+| Fecha | 13/11/2026 |
+| Ejecutor | Keyner Gil (ingeniero de pruebas automatizadas) |
+| Rama y versión | `keynergil`, sincronizada con `master` (`16fd4079`). `dashboard.py`, `ECV_2025_Limpio.xlsx`, `medellin_debug.geojson` y `requirements.txt` son idénticos a la versión bajo prueba `260f905a` (§2.1). |
+| Entorno | Windows; Python 3.14.4 en entorno virtual nuevo `.venv` (excluido por `.gitignore`); pytest 9.2.0, pandas 3.1.1, plotly 7.1.0. |
+| Comando | `python -m pytest -v`, desde la raíz del repositorio. |
+| Archivos de prueba | `tests/conftest.py`, `tests/test_funciones_dashboard.py`, `tests/test_datos_ecv.py`, `requirements-test.txt`. |
+| Resultado global | **40 pruebas: 39 aprobadas y 1 fallo esperado (`xfail`, DEF-001)**, en 1,85 s. |
+
+Esta ejecución es previa al congelamiento de código (H2, 17/11/2026). Se repetirá sobre el *commit* congelado y el resultado se agregará a este anexo.
+
+### A.2 Resultado por caso de prueba
+
+| Caso | Prueba(s) `pytest` | Entradas | Resultado |
+|---|---|---|---|
+| CP-01 | `test_cp01_limpiar_tildes_y_mayusculas` | 1 | Aprobado |
+| CP-02 | `test_cp02_limpiar_simbolos_y_espacios` | 1 | Aprobado |
+| CP-03 | `test_cp03_limpiar_vacio_y_nulo` | 2 (`""`, `None`) | Aprobado |
+| CP-04 | `test_cp04_limpiar_enie_y_guion` | 1 | Aprobado |
+| CP-05 | `test_cp05_match_valor_limite_del_cutoff`, `test_cp05b_…`, `test_cp05c_…` | 3 (similitud 0,7 exacta acepta; 0,6 rechaza; vacío; texto con tilde) | Aprobado |
+| CP-08 | `test_cp08_map_categoria_clases_validas` | 8 (clases V1–V5) | Aprobado |
+| CP-09 | `test_cp09_map_categoria_invalidos_son_no_sabe` | 6 (`NaN`, `None`, `pd.NA`, `""`, "NS/NR", "No sabe") | Aprobado |
+| CP-10 | `test_cp10_muy_mala_no_se_confunde_con_mala` | 2 | Aprobado |
+| CP-11 | `test_cp11_cero_negativas_da_cero_por_ciento` | 1 | Aprobado |
+| CP-12 | `test_cp12_todas_negativas_da_cien_por_ciento` | 1 | Aprobado |
+| CP-13 | `test_cp13_un_tercio_negativo` | 1 | Aprobado |
+| CP-14 | `test_cp14_dataframe_vacio_devuelve_tres_none` | 1 | Aprobado |
+| CP-17 | `test_cp17_estratos_enteros` | 1 | Aprobado |
+| CP-18 | `test_cp18_estratos_decimales` | 1 | **Fallido: DEF-001** (marcado `xfail`) |
+| CP-35 | `test_cp35_…catalogo_de_6_categorias`, `test_cp35b_…identidad_sobre_datos_reales` | 2 (10 316 registros, 5 variables) | Aprobado |
+| CP-36 | `test_cp36_estrato_real_es_entero_entre_1_y_6_sin_nulos` | 1 | Aprobado |
+| TI-06 (opcional, R-09) | `test_ti06_…` (centroide y límites) | 7 | Aprobado |
+
+### A.3 Defectos registrados
+
+| ID | Riesgo / caso | Descripción | Severidad | Estado |
+|---|---|---|---|---|
+| DEF-001 | R-04 / CP-18 | Con estrato decimal (`1.0`), `str(x).isdigit()` es falso: en `figuras_estadisticas_barrio()` la etiqueta queda `"1.0"` en lugar de `"Estrato 1"` (verificado por CP-18) y, por inspección de código, la lista del filtro de estratos de los modales queda vacía. | P3 propuesta (latente); confirmar con el gestor de defectos. | Abierto. CP-36 confirma que el Excel actual guarda el estrato como entero, por lo que hoy no se manifiesta. |
+
+La prueba de CP-18 usa `xfail(strict=True)`: cuando se corrija DEF-001 pasará a "XPASS" y `pytest` lo reportará como fallo, para recordar quitar la marca y cerrar el defecto.
+
+### A.4 Verificación de la capacidad de detección
+
+Para comprobar que las pruebas detectan errores reales se introdujeron defectos a propósito en una copia de `dashboard.py` (no en el repositorio):
+
+| Defecto introducido | Pruebas que lo detectaron |
+|---|---|
+| `map_categoria()` evalúa "mala" antes que "muy mala" | CP-08, CP-10 y CP-35 (4 pruebas fallidas) |
+| `encontrar_mejor_match()` con `cutoff=0.8` en lugar de 0.7 | CP-05 |
+| % negativo redondeado a 0 decimales en lugar de 1 | CP-13 |
+
+Los tres defectos fueron detectados.
+
+### A.5 Observaciones
+
+- A-05 (extracción de funciones) se resolvió sin crear `utils.py` ni modificar `dashboard.py`; ver §5.4.
+- RP-02 confirmado: `env/` y `node_modules/` siguen versionados en `master` (8 192 archivos) aunque estén en `.gitignore`, y la carpeta `env/` no es reutilizable. La ejecución usó un entorno `.venv` nuevo. Se recomienda retirarlos del control de versiones con `git rm -r --cached env node_modules`.
