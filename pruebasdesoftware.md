@@ -13,26 +13,25 @@
 | Identificador | `PP-DAM-2026-001` |
 | Título | Plan de Pruebas del Dashboard Ambiental Medellín |
 | Tipo de documento | Plan de Pruebas de Proyecto (*Project Test Plan*) |
-| Versión | 1.0 |
+| Versión | 0.2 |
 | Estado | Borrador para aprobación |
 | Fecha de emisión | 10/11/2026 |
+| Última actualización | 12/11/2026 |
 | Ubicación | Repositorio `jeyson4013/Analisis_ambiental` — archivo `pruebasdesoftware.md` |
 
 ### 1.2 Organización emisora y autores
 
 - **Organización emisora:** Equipo de desarrollo del proyecto *Análisis Ambiental — Percepción Ambiental Ciudadana de Medellín*.
 - **Autores:**
-  - Camilo Carmona
   - Keyner Gil
   - Jeyson González
-  - Marisol Roche
+  - Mateo Villada Villada
 
 ### 1.3 Autoridad de aprobación
 
 | Rol | Nombre | Responsabilidad | Firma / Fecha |
 |---|---|---|---|
-| Asesor(a) académico(a) | Ingry Gómez | Aprobación del plan y de los criterios de finalización | |
-| Asesor académico | Juan Zapata | Aprobación del plan y revisión del informe de cierre | |
+| Docente | Roberto José Calderón Bermejo | Aprobación del plan, de los criterios de finalización y revisión del informe de cierre | |
 | Líder de pruebas | Jeyson González | Elaboración y mantenimiento del plan | |
 
 ### 1.4 Historial de cambios y control de versiones
@@ -40,6 +39,7 @@
 | Versión | Fecha | Autor | Descripción del cambio |
 |---|---|---|---|
 | 0.1 | 10/11/2026 | Equipo de desarrollo | Creación del borrador inicial con base en las directrices del docente. |
+| 0.2 | 12/11/2026 | Equipo de desarrollo | Ajuste del volumen a 24 casos (18 manuales y 6 automatizados), y recálculo de la estimación de esfuerzo. |
 | 1.0 | — | Equipo de desarrollo | Versión para aprobación (pendiente). |
 
 El documento se versiona en Git junto al código fuente. Cada modificación se realiza mediante *commit* con mensaje descriptivo y, para cambios de alcance, mediante *Pull Request* revisado por al menos un integrante distinto del autor.
@@ -53,6 +53,8 @@ El documento se versiona en Git junto al código fuente. Cada modificación se r
 Este plan define el enfoque, los recursos, el cronograma y las actividades de prueba del **Dashboard Ambiental Medellín**, una aplicación web desarrollada en Python/Streamlit que visualiza sobre un mapa interactivo la percepción ciudadana de cinco variables ambientales (Aire, Ríos, Ruido, Basuras y Contaminación Visual), a partir de la Encuesta de Calidad de Vida 2025 de *Medellín Cómo Vamos*.
 
 El plan cubre el ciclo de pruebas de **3 semanas** sobre la versión del código en la rama `master` (commit `260f905a`), e incluye: gestión de riesgos, diseño de condiciones y casos de prueba, trazabilidad, entorno, criterios de suspensión/finalización, estimaciones, roles y cronograma.
+
+El volumen de pruebas es de **24 casos**: **18 manuales** y **6 automatizados**.
 
 ### 2.2 Referencias documentales
 
@@ -72,7 +74,7 @@ El plan cubre el ciclo de pruebas de **3 semanas** sobre la versión del código
 **Declaración:** El proyecto **NO** aplica la norma ISO/IEC/IEEE 29119 de forma íntegra. Se declara **conformidad adaptada** (*tailored conformance*) conforme a lo permitido por la propia norma, justificada por:
 
 1. **Nivel de criticidad del software: BAJO.** El dashboard es una herramienta académica de visualización y consulta. No procesa transacciones, no gestiona datos personales identificables, no controla procesos físicos ni toma decisiones automatizadas que afecten a personas. Un fallo produce, en el peor caso, una visualización incorrecta o una interrupción del servicio.
-2. **Restricciones del proyecto:** ciclo de pruebas de **3 semanas**, equipo de 4 personas con dedicación parcial, sin presupuesto para herramientas comerciales ni entornos dedicados.
+2. **Restricciones del proyecto:** ciclo de pruebas de **3 semanas**, equipo de 3 personas con dedicación parcial, sin presupuesto para herramientas comerciales ni entornos dedicados.
 
 **Procesos y documentos que se mantienen:**
 
@@ -93,7 +95,7 @@ El plan cubre el ciclo de pruebas de **3 semanas** sobre la versión del código
 | Especificaciones separadas de diseño, casos y procedimientos (29119-3 §8.2–8.4) | Se integran en la matriz de trazabilidad de la sección 5.3. | Menor granularidad documental; mitigado con IDs únicos y trazabilidad completa. |
 | Informes de estado periódicos (*Test Status Report*) | Sustituidos por seguimiento semanal en reunión de equipo. | Menor visibilidad formal del avance intermedio. |
 | Pruebas de rendimiento con carga concurrente, seguridad avanzada (pentesting) y accesibilidad formal (WCAG) | Fuera del alcance de 3 semanas y de la criticidad del producto. | Posibles degradaciones con muchos usuarios concurrentes o barreras de accesibilidad no detectadas. Riesgo **aceptado** (ver R-14, R-15). |
-| Automatización completa de pruebas de interfaz (Selenium/Playwright) | Costo de configuración elevado para el ciclo disponible. | Las pruebas de UI dependen de ejecución manual, con mayor posibilidad de error humano. |
+| Automatización completa de pruebas de interfaz (Selenium/Playwright) | Costo de configuración elevado para el ciclo disponible. Solo se automatizan 6 casos de lógica pura con `pytest`. | Las pruebas de UI dependen de ejecución manual, con mayor posibilidad de error humano. |
 
 ### 2.4 Glosario
 
@@ -138,9 +140,9 @@ El plan cubre el ciclo de pruebas de **3 semanas** sobre la versión del código
 ### 3.2 Alcance y exclusiones de las pruebas
 
 **Dentro del alcance:**
-- Pruebas **unitarias** de funciones puras (TI-03, TI-04, TI-05, TI-06, TI-09) con `pytest`.
-- Pruebas de **integración** de datos (Excel ↔ GeoJSON ↔ mapa).
-- Pruebas de **sistema** funcionales de la interfaz (mapa, filtros, modales, navegación) ejecutadas manualmente.
+- **6 pruebas automatizadas** con `pytest` de funciones puras (TI-03, TI-04, TI-05, TI-09).
+- Pruebas **manuales de integración** de datos (Excel ↔ GeoJSON ↔ mapa).
+- Pruebas **manuales de sistema** funcionales de la interfaz (mapa, filtros, modales, navegación).
 - Pruebas de **compatibilidad** básica en Chrome, Firefox y Edge (escritorio) y un navegador móvil (acceso vía QR).
 - Pruebas de **instalación/despliegue** desde un entorno limpio con `requirements.txt`.
 - Verificación de **exactitud de datos** (porcentajes y conteos) contra cálculos independientes.
@@ -153,6 +155,7 @@ El plan cubre el ciclo de pruebas de **3 semanas** sobre la versión del código
 - Contenido textual de los análisis en `DETALLES_ANALISIS` y "Acerca de" (solo se verifica que se muestre).
 - Librerías de terceros (Streamlit, Folium, Plotly) y servicios de mosaicos de mapa (CartoDB).
 - Carpetas `scratch/`, `node_modules/` y `env/`.
+- Pruebas dedicadas de cálculos geométricos (TI-06): riesgo R-09 aceptado.
 
 ### 3.3 Suposiciones y restricciones
 
@@ -163,18 +166,18 @@ El plan cubre el ciclo de pruebas de **3 semanas** sobre la versión del código
 - S-04: La versión bajo prueba se congela al inicio de la Semana 2; los cambios posteriores solo corrigen defectos.
 
 **Restricciones:**
-- R-01: Ciclo total de **3 semanas** (10/11/2026 – 28/11/2026).
-- R-02: Equipo de 4 personas con dedicación parcial (≈ 8 h/semana por persona).
-- R-03: Sin herramientas comerciales; solo software libre (`pytest`, GitHub Issues).
-- R-04: La aplicación es un único script Streamlit, lo que dificulta pruebas unitarias aisladas (las funciones dependen de `st.session_state` y se ejecutan al importar el módulo).
-- R-05: La carpeta `env/` versionada en el repositorio contiene rutas absolutas de otra máquina y no es reutilizable; cada evaluador debe crear su propio entorno virtual.
+- RES-01: Ciclo total de **3 semanas** (10/11/2026 – 28/11/2026).
+- RES-02: Equipo de 3 personas con dedicación parcial (≈ 8 h/semana por persona).
+- RES-03: Sin herramientas comerciales; solo software libre (`pytest`, GitHub Issues).
+- RES-04: La aplicación es un único script Streamlit, lo que dificulta pruebas unitarias aisladas (las funciones dependen de `st.session_state` y se ejecutan al importar el módulo).
+- RES-05: La carpeta `env/` versionada en el repositorio contiene rutas absolutas de otra máquina y no es reutilizable; cada evaluador debe crear su propio entorno virtual.
 
 ### 3.4 Partes interesadas
 
 | Parte interesada | Interés en las pruebas |
 |---|---|
-| Asesores académicos (Ingry Gómez, Juan Zapata) | Calidad del producto y cumplimiento del proceso ISO 29119 adaptado. |
-| Equipo de desarrollo (Camilo Carmona, Keyner Gil, Jeyson González, Marisol Roche) | Detectar y corregir defectos antes de la entrega. |
+| Docente (Roberto José Calderón Bermejo) | Calidad del producto y cumplimiento del proceso ISO 29119 adaptado. |
+| Equipo de desarrollo (Keyner Gil, Jeyson González, Mateo Villada Villada) | Detectar y corregir defectos antes de la entrega. |
 | Usuarios finales (ciudadanía, estudiantes, tomadores de decisiones) | Información correcta, navegación clara y disponibilidad en web/móvil. |
 | Medellín Cómo Vamos (fuente de datos) | Representación fiel de los datos de la encuesta. |
 
@@ -262,24 +265,24 @@ El plan cubre el ciclo de pruebas de **3 semanas** sobre la versión del código
 
 | ID | Exposición | Tratamiento | Acción |
 |---|---|---|---|
-| R-01 | Crítico | **Mitigar con pruebas (obligatorio)** | Pruebas unitarias del *matching* y verificación integral de todos los barrios del GeoJSON contra el Excel (CDP-01, CDP-02). |
-| R-02 | Alto | **Mitigar con pruebas (obligatorio)** | Pruebas unitarias exhaustivas de `map_categoria()` (CDP-03). |
-| R-03 | Alto | **Mitigar con pruebas (obligatorio)** | Comparación de porcentajes contra cálculo independiente (CDP-04, CDP-05). |
+| R-01 | Crítico | **Mitigar con pruebas (obligatorio)** | Pruebas automatizadas de `limpiar()` y del *matching*, y verificación manual de todos los barrios del GeoJSON contra el Excel (CDP-01, CDP-02). |
+| R-02 | Alto | **Mitigar con pruebas (obligatorio)** | Pruebas automatizadas exhaustivas de `map_categoria()` (CDP-03). |
+| R-03 | Alto | **Mitigar con pruebas (obligatorio)** | Prueba automatizada de límites del % negativo y comparación manual contra cálculo independiente (CDP-04, CDP-05). |
 | R-04 | Alto | **Mitigar con pruebas (obligatorio)** | Pruebas de valores de estrato enteros, decimales y nulos (CDP-06). |
-| R-05 | Alto | **Mitigar con pruebas (obligatorio)** | Pruebas de carga con archivos válidos, ausentes y corruptos (CDP-07). |
+| R-05 | Alto | **Mitigar con pruebas (obligatorio)** | Pruebas de carga con archivos válidos y ausentes (CDP-07). |
 | R-07 | Alto | **Mitigar con pruebas (obligatorio)** | Pruebas de transición de estados de navegación y modales (CDP-08). |
 | RP-01 | Alto | Mitigar con gestión | Priorizar ejecución por exposición (Crítico → Alto → Medio); reserva de 2 días en Semana 3. |
 | RP-02 | Alto | Mitigar con gestión y pruebas | Guía de instalación con entorno virtual nuevo; CP de instalación limpia (CDP-11). Recomendar retirar `env/` del repositorio. |
-| R-06 | Medio | Mitigar con pruebas | AVL sobre número de variables seleccionadas (CDP-09). |
+| R-06 | Medio | Mitigar con pruebas | AVL y tabla de decisión sobre el selector de variables (CDP-09). |
 | R-08 | Medio | Mitigar con pruebas | Verificación visual de colores vs. categoría dominante (CDP-10). |
 | R-13 | Medio | Mitigar con pruebas | Instalación limpia y fijación de versiones (CDP-11). |
-| R-16 | Medio | Mitigar con pruebas | Prueba exploratoria en móvil vía QR (CDP-12). |
+| R-16 | Medio | Mitigar con pruebas | Prueba exploratoria en móvil vía QR y en tres navegadores (CDP-12). |
 | RP-03 | Medio | Mitigar con gestión | Congelamiento de código al inicio de Semana 2; ejecución sobre *commit* identificado. |
 | RP-04 | Medio | Mitigar con gestión | Asignación cruzada: cada CP con responsable y suplente. |
-| R-09 | Bajo | Aceptar (prueba opcional) | Se cubre indirectamente en CP-25 si hay tiempo. |
-| R-10 | Bajo | Aceptar | El archivo QR está versionado; se verifica en CP-27 de forma oportunista. |
+| R-09 | Bajo | Aceptar (sin caso dedicado) | Se observa de forma oportunista durante CP-15 y CP-16 (ubicación del marcador y zoom del barrio). |
+| R-10 | Bajo | Aceptar | El archivo QR está versionado; se verifica de forma oportunista al abrir el modal QR durante CP-23. |
 | R-11 | Bajo | Aceptar | Los nombres provienen de fuentes controladas y el código ya usa `html.escape()` en la mayoría de puntos. |
-| R-12 | Bajo | Aceptar | Se registra el tiempo de carga como dato informativo en CP-31; sin criterio de aceptación. |
+| R-12 | Bajo | Aceptar | Se registra el tiempo de carga como dato informativo en CP-12; sin criterio de aceptación. |
 | R-14 | Bajo | Aceptar | Excluido por *tailoring* (sección 2.3). |
 | R-15 | Bajo | Aceptar | Excluido por *tailoring* (sección 2.3). |
 | R-17 | Bajo | Aceptar | Se reporta como observación documental. |
@@ -299,7 +302,7 @@ El plan cubre el ciclo de pruebas de **3 semanas** sobre la versión del código
 | CDP-04 | El % de percepción negativa por variable es igual a (Mala + Muy mala) / total de respuestas del barrio filtrado. | R-03 |
 | CDP-05 | Los porcentajes por estrato suman 100 % por estrato y la distribución (torta) coincide con los conteos reales. | R-03 |
 | CDP-06 | El filtro y las etiquetas de estrato funcionan con valores enteros, decimales (`3.0`) y nulos. | R-04 |
-| CDP-07 | La aplicación carga los datos válidos y maneja de forma controlada la ausencia o corrupción del Excel y del GeoJSON. | R-05 |
+| CDP-07 | La aplicación carga los datos válidos y maneja de forma controlada la ausencia del Excel y del GeoJSON. | R-05 |
 | CDP-08 | Las transiciones entre estados de navegación (vista general, comuna, barrio, modal estadísticas, modal detalle) son correctas y conservan el contexto. | R-07 |
 | CDP-09 | El selector de variables permite entre 1 y 3 variables, gestiona "Todas" y descarta la más antigua al superar el máximo. | R-06 |
 | CDP-10 | El color de cada barrio corresponde a su categoría predominante y coincide con la leyenda. | R-08 |
@@ -313,11 +316,47 @@ Técnicas seleccionadas de ISO/IEC/IEEE 29119-4:
 | Técnica | Referencia 29119-4 | Aplicación |
 |---|---|---|
 | **Partición de Clases de Equivalencia (PCE)** | §5.2.1 | CDP-01, CDP-03, CDP-06, CDP-07: clases de entradas de texto, categorías Likert, tipos de estrato y estados de archivos. |
-| **Análisis de Valores Límite (AVL)** | §5.2.3 | CDP-04, CDP-09: 0 %, 100 %, barrio sin respuestas, 0/1/3/4 variables seleccionadas, `cutoff` del *matching* (0.7 y 0.5). |
+| **Análisis de Valores Límite (AVL)** | §5.2.3 | CDP-02, CDP-04, CDP-09: similitud del *matching* alrededor del `cutoff` 0.7, 0 %/100 % de percepción negativa, barrio sin respuestas, 1/2/3/4 variables seleccionadas. |
 | **Transición de Estados (TE)** | §5.2.8 | CDP-08: máquina de estados de navegación y modales. |
 | **Tablas de Decisión** | §5.2.6 | CDP-09: combinaciones de "Todas" / variable ya seleccionada / variable nueva / máximo alcanzado. |
-| **Pruebas basadas en escenarios / casos de uso** | §5.2.9 | CDP-10, CDP-12: recorridos completos del usuario. |
+| **Pruebas basadas en escenarios / casos de uso** | §5.2.9 | CDP-05, CDP-10, CDP-12: recorridos completos del usuario. |
 | **Adivinación de errores (*Error Guessing*)** | §5.4.1 | CDP-02, CDP-11: barrios homónimos, corregimientos, versiones de librerías. |
+
+#### Datos de entrada generados por cada técnica
+
+**AVL — `cutoff` del *matching* (CP-02).** `difflib.SequenceMatcher` calcula `ratio = 2·M / T`, donde M es el número de caracteres coincidentes y T el total de caracteres de ambas cadenas. Con el `cutoff = 0.7` se eligieron dos pares reales de nombres, uno justo por debajo y otro justo por encima del límite:
+
+| Par (A, B) | M | T | Ratio | Resultado esperado con `cutoff = 0.7` |
+|---|---|---|---|---|
+| `LA AMERICA` / `LA CANDELARIA` | 8 | 23 | 0.6957 | Sin coincidencia (`None`) |
+| `POBLADO` / `ROBLEDO` | 5 | 14 | 0.7143 | Coincidencia |
+
+El segundo par es además un ejemplo de falso positivo: son barrios distintos que el *matching* aceptaría si no se restringe la búsqueda a la comuna.
+
+**AVL — percepción negativa (CP-05).** Para `% negativo = (Mala + Muy mala) / total × 100`, con total = n:
+
+| Caso límite | n | Negativas | % esperado |
+|---|---|---|---|
+| Barrio sin respuestas | 0 | 0 | `(None, None, None)` sin excepción |
+| Mínimo | 10 | 0 | 0.0 |
+| Máximo | 10 | 10 | 100.0 |
+| Mixto (1 Mala, 1 Buena, 1 No sabe) | 3 | 1 | 33.3 |
+
+**AVL — número de variables seleccionadas (CP-20).** Valores 1, 2, 3 (máximo permitido) y 4 (primer valor inválido).
+
+**PCE — `map_categoria()` (CP-03, CP-04).**
+
+| Clase | Ejemplos de entrada | Salida esperada |
+|---|---|---|
+| V1 "muy buena" | "Muy buena", "MUY BUENA" | Muy buena |
+| V2 "buena" (sin "muy") | "Buena", "buena " | Buena |
+| V3 "aceptable"/"regular" | "Aceptable", "Regular" | Aceptable |
+| V4 "muy mala" | "Muy mala", "MUY MALA", "Muy Mala " | Muy mala |
+| V5 "mala" (sin "muy") | "Mala" | Mala |
+| I1 nulo | `NaN`, `None` | No sabe |
+| I2 otro texto | "No sabe", "NS/NR", "" | No sabe |
+
+**PCE — estrato (CP-06).** Clases: enteros (`1, 2, 3`), decimales (`1.0, 2.0`) y nulos (`NaN`). Un representante por clase.
 
 **Modelo de transición de estados (CDP-08):**
 
@@ -335,18 +374,6 @@ Técnicas seleccionadas de ISO/IEC/IEEE 29119-4:
  Estados transversales: [Modal QR] y [Modal Acerca de] accesibles desde cualquier estado del sidebar.
 ```
 
-**Clases de equivalencia de `map_categoria()` (CDP-03):**
-
-| Clase | Ejemplos de entrada | Salida esperada |
-|---|---|---|
-| V1 "muy buena" | "Muy buena", "MUY BUENA" | Muy buena |
-| V2 "buena" (sin "muy") | "Buena", "buena " | Buena |
-| V3 "aceptable"/"regular" | "Aceptable", "Regular" | Aceptable |
-| V4 "muy mala" | "Muy mala" | Muy mala |
-| V5 "mala" (sin "muy") | "Mala" | Mala |
-| I1 nulo | `NaN`, `None` | No sabe |
-| I2 otro texto | "No sabe", "NS/NR", "" | No sabe |
-
 **Tabla de decisión del selector de variables (CDP-09):**
 
 | Regla | Botón pulsado | Estado actual | Resultado esperado |
@@ -360,63 +387,65 @@ Técnicas seleccionadas de ISO/IEC/IEEE 29119-4:
 
 ### 5.3 Generación de Casos de Prueba y Trazabilidad
 
-**Casos de prueba:**
+**Volumen:** 24 casos de prueba, **18 manuales** (CP-07 a CP-24) y **6 automatizados** (CP-01 a CP-06).
 
-| ID CP | Técnica | Precondición | Entrada / Pasos | Resultado esperado | Nivel |
-|---|---|---|---|---|---|
-| CP-01 | PCE | — | `limpiar("Laureles Estadío")` | `"LAURELES ESTADIO"` | Unitario |
-| CP-02 | PCE | — | `limpiar("  La  Candelaria!! ")` | `"LA CANDELARIA"` | Unitario |
-| CP-03 | PCE / AVL | — | `limpiar("")`, `limpiar(None)` | `""` | Unitario |
-| CP-04 | PCE | — | `limpiar("Castilla-Ñ")` | `"CASTILLA N"` | Unitario |
-| CP-05 | AVL | Lista de barrios | `encontrar_mejor_match` con similitud justo por encima y por debajo de 0.7 | Devuelve coincidencia / `None` respectivamente | Unitario |
-| CP-06 | Adivinación de errores | Datos cargados | Recorrer todos los *features* del GeoJSON y comparar `comuna_df` con la comuna oficial del polígono | 0 barrios asignados a comuna errónea; lista de no emparejados documentada | Integración |
-| CP-07 | Adivinación de errores | Datos cargados | Verificar barrios homónimos en comunas distintas | Cada uno conserva su propia comuna | Integración |
-| CP-08 | PCE | — | `map_categoria` con clases V1–V5 (5 valores) | Categoría correspondiente según tabla 5.2 | Unitario |
-| CP-09 | PCE | — | `map_categoria` con I1–I2 (`NaN`, `""`, "NS/NR") | `"No sabe"` | Unitario |
-| CP-10 | PCE | — | `map_categoria("MUY MALA")` y `"Muy Mala "` | `"Muy mala"` (no `"Mala"`) | Unitario |
-| CP-11 | AVL | DataFrame sintético | 10 respuestas, 0 negativas | % negativo = 0.0 | Unitario |
-| CP-12 | AVL | DataFrame sintético | 10 respuestas, 10 negativas | % negativo = 100.0 | Unitario |
-| CP-13 | AVL | DataFrame sintético | 3 respuestas: 1 Mala, 1 Buena, 1 No sabe | % negativo = 33.3 | Unitario |
-| CP-14 | AVL | — | DataFrame vacío | `(None, None, None)` sin excepción | Unitario |
-| CP-15 | Escenario | Barrio real seleccionado | Comparar % del gráfico "Resumen por variable" con cálculo manual en hoja de cálculo | Diferencia ≤ 0.1 puntos | Sistema |
-| CP-16 | Escenario | Barrio con ≥ 2 estratos | Gráfico "Por estrato": sumar porcentajes de cada barra | Suma = 100 % ± 1 por estrato | Sistema |
-| CP-17 | PCE | DataFrame sintético | Columna estrato con enteros (`1, 2, 3`) | Etiquetas "Estrato 1..3"; filtro con 3 opciones | Unitario |
-| CP-18 | PCE | DataFrame sintético | Columna estrato con decimales (`1.0, 2.0`, `NaN`) | Etiquetas "Estrato 1", "Estrato 2"; filtro no vacío | Unitario |
-| CP-19 | PCE | Barrio real | Aplicar filtro "Estrato 3" en el modal | Los tres gráficos y el conteo reflejan solo estrato 3 | Sistema |
-| CP-20 | PCE | Archivos válidos | Iniciar aplicación | Mapa con todas las comunas coloreadas, sin errores | Sistema |
-| CP-21 | PCE | Renombrar `medellin_debug.geojson` | Iniciar aplicación | Mensaje "Error cargando GeoJSON local", la app no se detiene | Sistema |
-| CP-22 | PCE | Renombrar `ECV_2025_Limpio.xlsx` | Iniciar aplicación | Comportamiento documentado (actualmente excepción no controlada → se registra defecto si aplica) | Sistema |
-| CP-23 | TE | E0 | Clic en una comuna | Transición a E1: solo barrios de esa comuna, sidebar con "Comuna activa" | Sistema |
-| CP-24 | TE | E1 | Clic en un barrio | Transición a E2: modal de estadísticas con nombre de barrio y comuna correctos | Sistema |
-| CP-25 | TE | E2 | Clic en barra "Aire" o botón "💨 Aire" | Transición a E3: modal de detalle con la variable Aire | Sistema |
-| CP-26 | TE | E3 | "← Volver" | Retorna a E2 del mismo barrio | Sistema |
-| CP-27 | TE | E1b | "❌ Quitar" y luego "⬅️ Volver a todas las comunas" | E1 sin barrio y luego E0 con zoom/centro inicial | Sistema |
-| CP-28 | TE (transición inválida) | E2 abierto | Cerrar modal y pulsar F5 / recargar | No se reabre un modal sin barrio seleccionado; sin excepciones | Sistema |
-| CP-29 | Tabla de decisión | Vista general | Reglas D1–D6 de la tabla 5.2 | Estado del selector según tabla | Sistema |
-| CP-30 | AVL | 3 variables activas | Seleccionar una 4.ª variable | Quedan 3; se descarta la primera elegida; texto de ayuda "3 variables activas (máximo)" | Sistema |
-| CP-31 | Escenario | Comuna activa con 1 variable | Comparar color de 5 barrios con su categoría predominante calculada | Color = color de la leyenda para esa categoría | Sistema |
-| CP-32 | Adivinación de errores | Equipo limpio con Python 3.11+ | Crear `venv`, `pip install -r requirements.txt`, `streamlit run dashboard.py` | Aplicación inicia sin errores; se registran versiones instaladas | Instalación |
-| CP-33 | Escenario | Despliegue accesible por URL | Escanear QR desde móvil y navegar E0 → E2 | Mapa y modal legibles y operables | Sistema |
-| CP-34 | Escenario | — | Ejecutar CP-20, CP-23 y CP-24 en Chrome, Firefox y Edge | Resultado idéntico en los tres navegadores | Sistema |
+#### 5.3.1 Casos automatizados (6)
 
-**Matriz de trazabilidad (Riesgo → Condición → Caso):**
+Los casos automatizados no describen pasos: el procedimiento está en el script enlazado, alojado en el repositorio (carpeta `tests/`).
+
+| ID CP | Condición | Riesgo | Técnica | Datos de entrada (ver 5.2) | Resultado esperado | Script |
+|---|---|---|---|---|---|---|
+| CP-01 | CDP-01 | R-01 | PCE | `"Laureles Estadío"`, `"  La  Candelaria!! "`, `"Castilla-Ñ"`, `""`, `None` | `"LAURELES ESTADIO"`, `"LA CANDELARIA"`, `"CASTILLA N"`, `""`, `""` | [test_limpiar.py](tests/test_limpiar.py) |
+| CP-02 | CDP-02 | R-01 | AVL | Pares `LA AMERICA`/`LA CANDELARIA` (0.6957) y `POBLADO`/`ROBLEDO` (0.7143), `cutoff = 0.7` | `None` y coincidencia, respectivamente | [test_matching.py](tests/test_matching.py) |
+| CP-03 | CDP-03 | R-02 | PCE | Clases V1–V5 (incluye `"MUY MALA"` y `"Muy Mala "`) | Categoría de la tabla de 5.2; `"Muy mala"` nunca devuelve `"Mala"` | [test_categoria.py](tests/test_categoria.py) |
+| CP-04 | CDP-03 | R-02 | PCE | Clases I1–I2: `NaN`, `None`, `""`, `"NS/NR"`, `"No sabe"` | `"No sabe"` | [test_categoria.py](tests/test_categoria.py) |
+| CP-05 | CDP-04 | R-03 | AVL | DataFrames sintéticos de la tabla "percepción negativa" (n = 0, 10/0, 10/10, 1/3) | 0.0; 100.0; 33.3; `(None, None, None)` | [test_estadisticas.py](tests/test_estadisticas.py) |
+| CP-06 | CDP-06 | R-04 | PCE | Columna estrato con enteros (`1, 2, 3`), decimales (`1.0, 2.0`) y `NaN` | Etiquetas "Estrato 1", "Estrato 2", "Estrato 3"; filtro no vacío | [test_estrato.py](tests/test_estrato.py) |
+
+#### 5.3.2 Casos manuales (18)
+
+| ID CP | Condición | Riesgo | Técnica | Precondición | Pasos | Resultado esperado | Nivel |
+|---|---|---|---|---|---|---|---|
+| CP-07 | CDP-02 | R-01 | Adivinación de errores | Datos cargados | Recorrer todos los *features* del GeoJSON y comparar `comuna_df` con la comuna oficial del polígono | 0 barrios asignados a comuna errónea; lista de no emparejados documentada | Integración |
+| CP-08 | CDP-02 | R-01 | Adivinación de errores | Datos cargados | Verificar barrios homónimos en comunas distintas | Cada uno conserva su propia comuna | Integración |
+| CP-09 | CDP-04 | R-03 | Escenario | Barrio real seleccionado | Comparar el % del gráfico "Resumen por variable" con el cálculo manual en hoja de cálculo (DP-05) | Diferencia ≤ 0.1 puntos | Sistema |
+| CP-10 | CDP-05 | R-03 | Escenario | Barrio con ≥ 2 estratos | En el gráfico "Por estrato", sumar los porcentajes de cada barra | Suma = 100 % ± 1 por estrato | Sistema |
+| CP-11 | CDP-06 | R-04 | PCE | Barrio real | Aplicar el filtro "Estrato 3" en el modal | Los tres gráficos y el conteo reflejan solo el estrato 3 | Sistema |
+| CP-12 | CDP-07 | R-05 | PCE | Archivos válidos | Iniciar la aplicación y registrar el tiempo de carga | Mapa con todas las comunas coloreadas, sin errores | Sistema |
+| CP-13 | CDP-07 | R-05 | PCE | Renombrar `medellin_debug.geojson` | Iniciar la aplicación | Mensaje "Error cargando GeoJSON local"; la app no se detiene | Sistema |
+| CP-14 | CDP-07 | R-05 | PCE | Renombrar `ECV_2025_Limpio.xlsx` | Iniciar la aplicación | Comportamiento documentado (actualmente excepción no controlada → se registra defecto si aplica) | Sistema |
+| CP-15 | CDP-08 | R-07 | TE | E0 | Clic en una comuna | Transición a E1: solo barrios de esa comuna, sidebar con "Comuna activa" | Sistema |
+| CP-16 | CDP-08 | R-07 | TE | E1 | Clic en un barrio | Transición a E2: modal de estadísticas con nombre de barrio y comuna correctos | Sistema |
+| CP-17 | CDP-08 | R-07 | TE | E2 | Clic en la barra "Aire" o en el botón "💨 Aire"; luego "← Volver" | Transición a E3 (modal de detalle de Aire) y retorno a E2 del mismo barrio | Sistema |
+| CP-18 | CDP-08 | R-07 | TE | E1b | "❌ Quitar" y luego "⬅️ Volver a todas las comunas" | E1 sin barrio y luego E0 con zoom/centro inicial | Sistema |
+| CP-19 | CDP-08 | R-07 | TE (transición inválida) | E2 abierto | Cerrar el modal y pulsar F5 / recargar | No se reabre un modal sin barrio seleccionado; sin excepciones | Sistema |
+| CP-20 | CDP-09 | R-06 | Tabla de decisión + AVL | Vista general | Ejecutar las reglas D1–D6 de la tabla de 5.2; con 3 variables activas, seleccionar una 4.ª | Estado según la tabla; quedan 3, se descarta la primera elegida y se muestra "3 variables activas (máximo)" | Sistema |
+| CP-21 | CDP-10 | R-08 | Escenario | Comuna activa con 1 variable | Comparar el color de 5 barrios con su categoría predominante calculada (DP-05) | Color = color de la leyenda para esa categoría | Sistema |
+| CP-22 | CDP-11 | R-13, RP-02 | Adivinación de errores | Equipo limpio con Python 3.11+ | Crear `venv`, `pip install -r requirements.txt`, `streamlit run dashboard.py` | La aplicación inicia sin errores; se registran las versiones instaladas | Instalación |
+| CP-23 | CDP-12 | R-16 | Escenario | Despliegue accesible por URL | Escanear el QR desde un móvil y navegar E0 → E2 | Mapa y modal legibles y operables | Sistema |
+| CP-24 | CDP-12 | R-16 | Escenario | — | Ejecutar CP-12, CP-15 y CP-16 en Chrome, Firefox y Edge | Resultado idéntico en los tres navegadores | Sistema |
+
+#### 5.3.3 Matriz de trazabilidad (Riesgo ⇄ Condición ⇄ Caso)
 
 | Riesgo | Exposición | Condición(es) | Casos de prueba |
 |---|---|---|---|
-| R-01 | Crítico | CDP-01, CDP-02 | CP-01, CP-02, CP-03, CP-04, CP-05, CP-06, CP-07 |
-| R-02 | Alto | CDP-03 | CP-08, CP-09, CP-10 |
-| R-03 | Alto | CDP-04, CDP-05 | CP-11, CP-12, CP-13, CP-14, CP-15, CP-16 |
-| R-04 | Alto | CDP-06 | CP-17, CP-18, CP-19 |
-| R-05 | Alto | CDP-07 | CP-20, CP-21, CP-22 |
-| R-07 | Alto | CDP-08 | CP-23, CP-24, CP-25, CP-26, CP-27, CP-28 |
-| RP-02 | Alto | CDP-11 | CP-32 |
-| R-06 | Medio | CDP-09 | CP-29, CP-30 |
-| R-08 | Medio | CDP-10 | CP-31 |
-| R-13 | Medio | CDP-11 | CP-32 |
-| R-16 | Medio | CDP-12 | CP-33, CP-34 |
-| R-09, R-10, R-11, R-12, R-14, R-15, R-17 | Bajo | — | Aceptados sin pruebas dedicadas (sección 4.3) |
+| R-01 | Crítico | CDP-01, CDP-02 | CP-01, CP-02, CP-07, CP-08 |
+| R-02 | Alto | CDP-03 | CP-03, CP-04 |
+| R-03 | Alto | CDP-04, CDP-05 | CP-05, CP-09, CP-10 |
+| R-04 | Alto | CDP-06 | CP-06, CP-11 |
+| R-05 | Alto | CDP-07 | CP-12, CP-13, CP-14 |
+| R-07 | Alto | CDP-08 | CP-15, CP-16, CP-17, CP-18, CP-19 |
+| RP-02 | Alto | CDP-11 | CP-22 |
+| R-06 | Medio | CDP-09 | CP-20 |
+| R-08 | Medio | CDP-10 | CP-21 |
+| R-13 | Medio | CDP-11 | CP-22 |
+| R-16 | Medio | CDP-12 | CP-23, CP-24 |
+| R-09, R-10, R-11, R-12, R-14, R-15, R-17 | Bajo | — | Aceptados sin casos dedicados (sección 4.3) |
 
-**Cobertura:** 100 % de los riesgos Críticos y Altos de producto tienen al menos una condición y un caso de prueba asociado.
+**Cobertura:**
+- 100 % de los riesgos Críticos y Altos de producto tienen al menos una condición y un caso de prueba asociado.
+- Ningún caso queda huérfano: cada uno de los 24 casos responde a una condición que mitiga un riesgo evaluado (la columna "Condición" y "Riesgo" de 5.3.1 y 5.3.2 permite recorrer la trazabilidad en ambos sentidos).
+- Distribución: 4 casos de riesgo Crítico (CP-01, CP-02, CP-07, CP-08), 15 de riesgos Altos de producto (CP-03 a CP-06, CP-09 a CP-19), 1 caso (CP-22) que cubre un riesgo Alto de proyecto (RP-02) y uno Medio (R-13), y 4 casos de riesgos Medios (CP-20, CP-21, CP-23, CP-24).
 
 ### 5.4 Requisitos de entorno y datos de prueba
 
@@ -426,13 +455,26 @@ Técnicas seleccionadas de ISO/IEC/IEEE 29119-4:
 |---|---|
 | Sistema operativo | Windows 10/11 (principal); opcional Linux/macOS. |
 | Python | 3.11 o superior, en entorno virtual nuevo (no usar la carpeta `env/` del repositorio). |
-| Dependencias | `requirements.txt` + `pytest` para pruebas unitarias. |
+| Dependencias | `requirements.txt` + `pytest` para pruebas automatizadas. |
 | Ejecución | `streamlit run dashboard.py` (local) o despliegue en Streamlit Community Cloud para la prueba móvil. |
 | Navegadores | Google Chrome, Mozilla Firefox, Microsoft Edge (últimas versiones); navegador móvil Android o iOS. |
 | Control de versiones | Git / GitHub; ejecución sobre *commit* identificado y registrado en cada resultado. |
 | Registro de defectos | GitHub Issues con etiqueta `bug` y prioridad (`P1`–`P3`). |
 
-**Preparación para pruebas unitarias:** dado que `dashboard.py` ejecuta la interfaz al importarse, las funciones puras (`limpiar`, `encontrar_mejor_match`, `map_categoria`, `centroide_feature`, `bounds_from_features`, `figuras_estadisticas_barrio`) se probarán copiándolas o extrayéndolas a un módulo auxiliar (p. ej. `utils.py`), sin alterar su lógica.
+**Estructura del repositorio para las pruebas:**
+
+```
+/pruebasdesoftware.md            ← este plan (casos manuales y enlaces a los automatizados)
+/utils.py                        ← funciones puras extraídas de dashboard.py
+/tests
+   ├── test_limpiar.py           ← CP-01
+   ├── test_matching.py          ← CP-02
+   ├── test_categoria.py         ← CP-03, CP-04
+   ├── test_estadisticas.py      ← CP-05
+   └── test_estrato.py           ← CP-06
+```
+
+**Preparación para pruebas automatizadas:** dado que `dashboard.py` ejecuta la interfaz al importarse, las funciones puras (`limpiar`, `encontrar_mejor_match`, `map_categoria`, `figuras_estadisticas_barrio`) se probarán extrayéndolas a un módulo auxiliar (`utils.py`), sin alterar su lógica. Se ejecutan con `pytest tests/`.
 
 **Datos de prueba:**
 
@@ -440,10 +482,10 @@ Técnicas seleccionadas de ISO/IEC/IEEE 29119-4:
 |---|---|---|
 | DP-01 | `ECV_2025_Limpio.xlsx` (datos reales) | Pruebas de sistema e integración. |
 | DP-02 | `medellin_debug.geojson` (datos reales) | Pruebas de mapa e integración. |
-| DP-03 | DataFrames sintéticos construidos en `pytest` (respuestas controladas, estratos enteros/decimales/nulos) | CP-11 a CP-14, CP-17, CP-18. |
-| DP-04 | Listas de cadenas con tildes, eñes, símbolos, vacías y nulas | CP-01 a CP-05, CP-08 a CP-10. |
-| DP-05 | Hoja de cálculo de referencia con cálculos manuales para 3 barrios seleccionados | CP-15, CP-16, CP-31. |
-| DP-06 | Copias renombradas/corruptas de los archivos de datos | CP-21, CP-22. |
+| DP-03 | DataFrames sintéticos construidos en `pytest` (respuestas controladas, estratos enteros/decimales/nulos) | CP-05, CP-06. |
+| DP-04 | Listas de cadenas con tildes, eñes, símbolos, vacías y nulas; pares de barrios del *matching* | CP-01 a CP-04. |
+| DP-05 | Hoja de cálculo de referencia con cálculos manuales para 3 barrios seleccionados | CP-09, CP-10, CP-21. |
+| DP-06 | Copias renombradas de los archivos de datos | CP-13, CP-14. |
 
 ### 5.5 Criterios de suspensión y finalización
 
@@ -455,14 +497,14 @@ Técnicas seleccionadas de ISO/IEC/IEEE 29119-4:
 
 **Criterios de reanudación:**
 - Corrección del defecto bloqueante verificada en un nuevo *commit* identificado.
-- Re-ejecución de los casos afectados y de una prueba de humo (CP-20, CP-23, CP-24).
+- Re-ejecución de los casos afectados y de una prueba de humo (CP-12, CP-15, CP-16).
 
 **Criterios de finalización (salida):**
-- 100 % de los casos asociados a riesgos **Críticos y Altos** ejecutados.
-- ≥ 90 % de los casos asociados a riesgos **Medios** ejecutados.
+- 100 % de los casos asociados a riesgos **Críticos y Altos** ejecutados (CP-01 a CP-19 y CP-22).
+- ≥ 90 % de los casos asociados a riesgos **Medios** ejecutados (CP-20, CP-21, CP-23, CP-24).
 - 0 defectos abiertos de prioridad **P1** (datos erróneos o sistema inutilizable).
-- Defectos **P2** abiertos documentados con decisión aprobada por los asesores.
-- ≥ 95 % de los casos ejecutados en estado "Aprobado".
+- Defectos **P2** abiertos documentados con decisión aprobada por el docente.
+- ≥ 95 % de los casos ejecutados en estado "Aprobado" (al menos 23 de 24).
 - Informe de finalización de pruebas redactado y entregado.
 
 ---
@@ -477,12 +519,12 @@ Técnicas seleccionadas de ISO/IEC/IEEE 29119-4:
 | A-02 | Identificación y análisis de riesgos | TP3, TP4 | Sección 4 |
 | A-03 | Redacción y aprobación del Plan de Pruebas | TP5–TP8 | Este documento |
 | A-04 | Capacitación en `pytest` y preparación del entorno limpio | TE1 | Entorno operativo |
-| A-05 | Extracción de funciones puras a módulo auxiliar | TD4 | `utils.py` / `tests/` |
+| A-05 | Extracción de funciones puras a módulo auxiliar | TD4 | `utils.py` |
 | A-06 | Diseño de condiciones y casos de prueba | TD1–TD3 | Sección 5 |
 | A-07 | Preparación de datos de prueba (DP-01 a DP-06) | TD4 | Datos de prueba |
-| A-08 | Implementación de pruebas unitarias automatizadas | TD4 | `tests/test_*.py` |
-| A-09 | Ejecución de pruebas unitarias | TE2 | Reporte `pytest` |
-| A-10 | Ejecución de pruebas de integración y sistema | TE2 | Registro de resultados |
+| A-08 | Implementación de las 6 pruebas automatizadas | TD4 | `tests/test_*.py` |
+| A-09 | Ejecución de pruebas automatizadas | TE2 | Reporte `pytest` |
+| A-10 | Ejecución de las 18 pruebas manuales (integración y sistema) | TE2 | Registro de resultados |
 | A-11 | Registro y seguimiento de defectos | TE3 | GitHub Issues |
 | A-12 | Re-pruebas y pruebas de regresión | TE2 | Registro actualizado |
 | A-13 | Informe de finalización de pruebas | TC1–TC4 | Informe final |
@@ -491,26 +533,28 @@ Técnicas seleccionadas de ISO/IEC/IEEE 29119-4:
 
 Técnica de estimación: **juicio de expertos del equipo + descomposición por actividades (WBS)**.
 
-| ID | Actividad | Esfuerzo (h-persona) |
-|---|---|---|
-| A-01 | Análisis del contexto | 3 |
-| A-02 | Análisis de riesgos | 4 |
-| A-03 | Plan de pruebas | 6 |
-| A-04 | Capacitación y entorno | 6 |
-| A-05 | Extracción de funciones | 3 |
-| A-06 | Diseño de casos | 6 |
-| A-07 | Datos de prueba | 5 |
-| A-08 | Implementación de pruebas unitarias | 12 |
-| A-09 | Ejecución unitaria | 2 |
-| A-10 | Ejecución integración y sistema | 20 |
-| A-11 | Gestión de defectos | 5 |
-| A-12 | Re-pruebas y regresión | 8 |
-| A-13 | Informe final | 4 |
-| | **Subtotal** | **84** |
-| | Contingencia (≈ 15 %) | 12 |
-| | **Total estimado** | **96 h-persona** |
+Bases de cálculo: A-08 = 6 casos × 1 h + 1 h de configuración de `pytest`; A-10 = 18 casos × 0,5 h de ejecución + 5 h de preparación de evidencias y hojas de cálculo.
 
-Capacidad disponible: 4 personas × 8 h/semana × 3 semanas = **96 h-persona**. La contingencia se libera para riesgos de exposición Media si no se consume.
+| ID | Actividad | Esfuerzo (h-persona) | Dependencia | Responsables (h) |
+|---|---|---|---|---|
+| A-01 | Análisis del contexto | 2 | — | Jeyson (2) |
+| A-02 | Análisis de riesgos | 3 | A-01 | Mateo (3) |
+| A-03 | Plan de pruebas | 5 | A-02 | Jeyson (5) |
+| A-04 | Capacitación y entorno | 5 | — | Keyner (2), Mateo (2), Jeyson (1) |
+| A-05 | Extracción de funciones | 3 | A-04 | Keyner (3) |
+| A-06 | Diseño de casos | 5 | A-02 | Mateo (5) |
+| A-07 | Datos de prueba | 3 | A-06 | Mateo (2), Keyner (1) |
+| A-08 | Implementación de pruebas automatizadas | 7 | A-05, A-07 | Keyner (7) |
+| A-09 | Ejecución automatizada | 1 | A-08 | Keyner (1) |
+| A-10 | Ejecución manual (integración y sistema) | 14 | A-06, A-07 | Mateo (5), Jeyson (4), Keyner (5) |
+| A-11 | Gestión de defectos | 4 | A-10 | Jeyson (4) |
+| A-12 | Re-pruebas y regresión | 6 | A-11 | Jeyson (2), Keyner (2), Mateo (2) |
+| A-13 | Informe final | 4 | A-12 | Jeyson (2), Mateo (2) |
+| | **Subtotal** | **62** | | Jeyson 20 · Keyner 21 · Mateo 21 |
+| | Contingencia (≈ 15 %) | 9 | | |
+| | **Total estimado** | **71 h-persona** | | |
+
+**Verificación de viabilidad:** capacidad disponible = 3 personas × 8 h/semana × 3 semanas = **72 h-persona**. Total estimado 71 h ≤ 72 h, con 1 h de holgura adicional. La contingencia se libera para riesgos de exposición Media si no se consume.
 
 ---
 
@@ -520,13 +564,12 @@ Capacidad disponible: 4 personas × 8 h/semana × 3 semanas = **96 h-persona**. 
 
 | Rol | Responsable | Suplente | Responsabilidades |
 |---|---|---|---|
-| Líder de pruebas | Jeyson González | Camilo Carmona | Plan de pruebas, seguimiento del cronograma, criterios de suspensión/finalización, informe final, contacto con asesores. |
-| Analista de riesgos y diseño | Marisol Roche | Keyner Gil | Matriz de riesgos, condiciones de prueba, casos y trazabilidad. |
-| Ingeniero de pruebas automatizadas | Keyner Gil | Jeyson González | Extracción de funciones, pruebas `pytest` (CP-01 a CP-14, CP-17, CP-18). |
-| Ejecutor de pruebas de sistema | Camilo Carmona | Marisol Roche | Pruebas manuales de UI, navegación, compatibilidad y móvil (CP-15, CP-16, CP-19 a CP-34). |
-| Gestor de configuración y defectos | Jeyson González | Keyner Gil | Congelamiento de versión, GitHub Issues, verificación de correcciones. |
+| Líder de pruebas y gestor de configuración | Jeyson González | Mateo Villada Villada | Plan de pruebas, seguimiento del cronograma, criterios de suspensión/finalización, informe final, contacto con el docente, congelamiento de versión, GitHub Issues y verificación de correcciones. |
+| Analista de riesgos y diseño | Mateo Villada Villada | Keyner Gil | Matriz de riesgos, condiciones de prueba, casos y trazabilidad. Ejecuta CP-07 a CP-14 (datos, integración y carga de archivos). |
+| Ingeniero de pruebas automatizadas | Keyner Gil | Jeyson González | Extracción de funciones, pruebas `pytest` (CP-01 a CP-06). Ejecuta CP-20 a CP-24 (selector, colores, instalación, móvil y navegadores). |
+| Ejecutor de pruebas de navegación | Jeyson González | Mateo Villada Villada | Ejecuta CP-15 a CP-19 (transiciones de estado y modales). |
 | Desarrolladores (corrección) | Todo el equipo | — | Corrección de defectos asignados. |
-| Aprobadores | Ingry Gómez, Juan Zapata | — | Aprobación del plan, aceptación del informe y de riesgos residuales. |
+| Aprobador (docente) | Roberto José Calderón Bermejo | — | Aprobación del plan, aceptación del informe y de riesgos residuales. |
 
 ---
 
@@ -541,14 +584,14 @@ Capacidad disponible: 4 personas × 8 h/semana × 3 semanas = **96 h-persona**. 
 | 10/11 | A-01, A-02 | Riesgos identificados |
 | 11/11 – 12/11 | A-03, A-06 | — |
 | 13/11 | A-04 (capacitación y entorno) | Entorno limpio operativo |
-| 14/11 | Revisión con asesores | **H1: Plan de pruebas aprobado** |
+| 14/11 | Revisión con el docente | **H1: Plan de pruebas aprobado** |
 
 **Semana 2 — Preparación y ejecución (17/11/2026 – 21/11/2026)**
 
 | Fecha | Actividad | Hito |
 |---|---|---|
 | 17/11 | Congelamiento de código; A-05, A-07 | **H2: Versión bajo prueba congelada** |
-| 18/11 – 19/11 | A-08, A-09 | Pruebas unitarias ejecutadas |
+| 18/11 – 19/11 | A-08, A-09 | Pruebas automatizadas ejecutadas |
 | 19/11 – 21/11 | A-10 (riesgos Crítico y Alto primero), A-11 | **H3: 100 % de casos Críticos/Altos ejecutados** |
 
 **Semana 3 — Corrección, regresión y cierre (24/11/2026 – 28/11/2026)**
@@ -565,8 +608,8 @@ Semana            S1 (10–14 nov)   S2 (17–21 nov)   S3 (24–28 nov)
 Planificación     ██████████
 Diseño de casos       ██████
 Entorno / datos         ████     ████
-Pruebas unitarias                ██████
-Pruebas sistema                    ██████████   ████
+Pruebas automat.                 ██████
+Pruebas manuales                   ██████████   ████
 Defectos / regresión                   ████     ██████
 Informe final                                       ████
 Hitos             H1 (14/11)  H2 (17/11)  H3 (21/11)  H4 (26/11)  H5 (28/11)
