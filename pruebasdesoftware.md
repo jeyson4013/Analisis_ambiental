@@ -28,7 +28,7 @@
   - Marisol Roche
 - **Autores del plan de pruebas** (curso Pruebas de Software; responsables de este documento y de su ejecución):
   - Jeyson González
-  - Mateo
+  - Mateo Villada
   - Keyner Gil
 
 ### 1.3 Autoridad de aprobación
@@ -169,7 +169,7 @@ El plan cubre el ciclo de pruebas de **3 semanas** sobre la versión del código
 
 **Restricciones:**
 - R-01: Ciclo total de **3 semanas** (10/11/2026 – 28/11/2026).
-- R-02: Equipo de pruebas de 3 personas (Jeyson González, Mateo, Keyner Gil) con dedicación parcial (≈ 8 h/semana por persona).
+- R-02: Equipo de pruebas de 3 personas (Jeyson González, Mateo Villada, Keyner Gil) con dedicación parcial (≈ 8 h/semana por persona).
 - R-03: Sin herramientas comerciales; solo software libre (`pytest`, GitHub Issues).
 - R-04: La aplicación es un único script Streamlit, lo que dificulta pruebas unitarias aisladas (las funciones dependen de `st.session_state` y se ejecutan al importar el módulo).
 - R-05: La carpeta `env/` versionada en el repositorio contiene rutas absolutas de otra máquina y no es reutilizable; cada evaluador debe crear su propio entorno virtual.
@@ -180,7 +180,7 @@ El plan cubre el ciclo de pruebas de **3 semanas** sobre la versión del código
 |---|---|
 | Asesores académicos (Ingry Gómez, Juan Zapata) | Calidad del producto y cumplimiento del proceso ISO 29119 adaptado. |
 | Equipo de desarrollo original (Camilo Carmona, Keyner Gil, Jeyson González, Marisol Roche) | Conocer los defectos detectados y corregirlos antes de la entrega. |
-| Equipo de pruebas (Jeyson González, Mateo, Keyner Gil) | Planificar, diseñar y ejecutar las pruebas; registrar defectos y su verificación. |
+| Equipo de pruebas (Jeyson González, Mateo Villada, Keyner Gil) | Planificar, diseñar y ejecutar las pruebas; registrar defectos y su verificación. |
 | Usuarios finales (ciudadanía, estudiantes, tomadores de decisiones) | Información correcta, navegación clara y disponibilidad en web/móvil. |
 | Medellín Cómo Vamos (fuente de datos) | Representación fiel de los datos de la encuesta. |
 
@@ -499,27 +499,26 @@ Técnicas seleccionadas de ISO/IEC/IEEE 29119-4:
 
 Técnica de estimación: **juicio de expertos del equipo + descomposición por actividades (WBS)**.
 
-| ID | Actividad | Esfuerzo (h-persona) |
-|---|---|---|
-| A-01 | Análisis del contexto | 3 |
-| A-02 | Análisis de riesgos | 4 |
-| A-03 | Plan de pruebas | 6 |
-| A-04 | Capacitación y entorno | 6 |
-| A-05 | Extracción de funciones | 3 |
-| A-06 | Diseño de casos | 6 |
-| A-07 | Datos de prueba | 5 |
-| A-08 | Implementación de pruebas unitarias | 12 |
-| A-09 | Ejecución unitaria | 2 |
-| A-10 | Ejecución integración y sistema | 20 |
-| A-11 | Gestión de defectos | 5 |
-| A-12 | Re-pruebas y regresión | 8 |
-| A-13 | Informe final | 4 |
-| | **Subtotal** | **84** |
-| | Contingencia (≈ 15 %) | 12 |
-| | **Total estimado** | **96 h-persona** |
+| ID | Actividad | v1.0 (h) | v1.1 (h) | Jeyson | Mateo | Keyner | Motivo del ajuste |
+|---|---|---|---|---|---|---|---|
+| A-01 | Análisis del contexto | 3 | 3 | 3 | | | Ejecutada. |
+| A-02 | Análisis de riesgos | 4 | 4 | 4 | | | Ejecutada. |
+| A-03 | Plan de pruebas | 6 | 6 | 5 | | 1 | v1.0 (Jeyson) y v1.1 (Keyner). |
+| A-04 | Capacitación y entorno | 6 | 3 | | | 3 | Entorno `.venv` documentado; capacitación de 1 h en `pytest` para el equipo. |
+| A-05 | Extracción de funciones | 3 | 2 | | | 2 | Resuelta con `tests/conftest.py`, sin crear `utils.py`. |
+| A-06 | Diseño de casos | 6 | 4 | 2 | 2 | | Casos ya diseñados en v1.0; resta detallar los manuales. |
+| A-07 | Datos de prueba | 5 | 4 | 2 | | 2 | DP-03/DP-04 en las pruebas; DP-05/DP-06 pendientes. |
+| A-08 | Implementación de pruebas unitarias | 12 | 8 | | | 8 | Implementadas (Anexo A). |
+| A-09 | Ejecución unitaria | 2 | 1 | | | 1 | Automática (< 2 s por corrida). |
+| A-10 | Ejecución integración y sistema | 20 | 16 | 4 | 11 | 1 | 20 casos manuales o de integración, ≈ 48 min por caso. |
+| A-11 | Gestión de defectos | 5 | 4 | 2 | 2 | | |
+| A-12 | Re-pruebas y regresión | 8 | 6 | | 3 | 3 | La regresión unitaria es automática. |
+| A-13 | Informe final | 4 | 4 | 2 | 1 | 1 | |
+| | **Subtotal** | **84** | **65** | **24** | **19** | **22** | |
+| | Contingencia | 12 | 7 (≈ 10 %) | 0 | 5 | 2 | Reserva administrada por el líder de pruebas. |
+| | **Total** | **96** | **72** | **24** | **24** | **24** | |
 
-Capacidad disponible (v1.1): 3 personas × 8 h/semana × 3 semanas = **72 h-persona**, frente a 84 h estimadas (96 h con contingencia): **déficit de 12 h sin contingencia y de 24 h con ella**. Decisión pendiente del líder de pruebas: (a) aumentar la dedicación a ≈ 11 h/semana por persona, o (b) recortar casos de riesgo Medio y declararlo en §2.3. Parte de A-05, A-08 y A-09 ya se ejecutó el 13/11/2026 (Anexo A).
-
+Capacidad disponible (v1.1): 3 personas × 8 h/semana × 3 semanas = **72 h-persona**. La reestimación v1.1 ajusta el esfuerzo al equipo de 3 personas sin recortar casos de prueba: se reduce en las actividades ya ejecutadas o automatizadas (A-04, A-05, A-08, A-09, A-12) y en el diseño ya realizado en la v1.0 (A-06, A-07). Cada integrante queda con 24 h (8 h/semana). La contingencia (7 h) se toma de la holgura de Mateo Villada (5 h) y Keyner Gil (2 h) y la asigna el líder de pruebas si alguna actividad se retrasa.
 ---
 
 ## 7. Personal
@@ -529,10 +528,10 @@ Capacidad disponible (v1.1): 3 personas × 8 h/semana × 3 semanas = **72 h-pers
 | Rol | Responsable | Suplente | Responsabilidades |
 |---|---|---|---|
 | Líder de pruebas | Jeyson González | Keyner Gil | Plan de pruebas, seguimiento del cronograma, criterios de suspensión/finalización, informe final, contacto con asesores. |
-| Analista de riesgos y diseño | Jeyson González | Mateo | Matriz de riesgos, condiciones de prueba, casos y trazabilidad. |
+| Analista de riesgos y diseño | Jeyson González | Mateo Villada | Matriz de riesgos, condiciones de prueba, casos y trazabilidad. |
 | Ingeniero de pruebas automatizadas | Keyner Gil | Jeyson González | Carga de funciones puras (`tests/conftest.py`), pruebas `pytest` (CP-01 a CP-05, CP-08 a CP-14, CP-17, CP-18, CP-35, CP-36) e instalación limpia (CP-32). |
-| Ejecutor de pruebas de sistema | Mateo | Keyner Gil | Pruebas manuales de navegación, selector de variables, colores, compatibilidad y móvil (CP-23 a CP-31, CP-33, CP-34). |
-| Gestor de configuración y defectos | Jeyson González | Mateo | Congelamiento de versión, GitHub Issues, verificación de correcciones; pruebas de integración y exactitud de datos (CP-06, CP-07, CP-15, CP-16, CP-19 a CP-22). |
+| Ejecutor de pruebas de sistema | Mateo Villada | Keyner Gil | Pruebas manuales de navegación, selector de variables, colores, compatibilidad y móvil (CP-23 a CP-31, CP-33, CP-34). |
+| Gestor de configuración y defectos | Jeyson González | Mateo Villada | Congelamiento de versión, GitHub Issues, verificación de correcciones; pruebas de integración y exactitud de datos (CP-06, CP-07, CP-15, CP-16, CP-19 a CP-22). |
 | Desarrolladores (corrección) | Todo el equipo | — | Corrección de defectos asignados. |
 | Aprobadores | Ingry Gómez, Juan Zapata | — | Aprobación del plan, aceptación del informe y de riesgos residuales. |
 
