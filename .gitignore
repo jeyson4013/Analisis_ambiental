@@ -31,3 +31,12 @@ desktop.ini
 # Editor
 *.swp
 *.swo
+
+# Trabajo final de Investigacion de Operaciones (archivos locales, no se suben)
+Trabajo final de investigaci*n de operaciones.docx
+Trabajo final IO - PERT-CPM y Transporte.docx
+Presentacion interactiva - PERT-CPM y Transporte.pptx
+Modelo transporte Solver.xlsx
+PERT-CPM Dashboard Ambiental.docx
+# Archivos temporales de Office
+~$*
