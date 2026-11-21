@@ -74,7 +74,7 @@ Este plan define el enfoque, los recursos, el cronograma y las actividades de pr
 
 El plan cubre el ciclo de pruebas de **3 semanas** sobre la versión del código en la rama `master` (commit `260f905a`), e incluye: gestión de riesgos, diseño de condiciones y casos de prueba, trazabilidad, entorno, criterios de suspensión/finalización, estimaciones, roles y cronograma.
 
-El volumen de pruebas es de **36 casos**: **16 automatizados** con `pytest` (CP-01 a CP-05, CP-08 a CP-14, CP-17, CP-18, CP-35 y CP-36) y **20 manuales** de integración, sistema e instalación (CP-06, CP-07, CP-15, CP-16, CP-19 a CP-34).
+El volumen de pruebas es de **36 casos**: **18 automatizados** con `pytest` (CP-01 a CP-14, CP-17, CP-18, CP-35 y CP-36; CP-06 y CP-07 se automatizaron el 21/11/2026) y **18 manuales** de sistema e instalación (CP-15, CP-16, CP-19 a CP-34). El avance de cada caso está en la tabla de §5.3.
 
 ### 2.2 Referencias documentales
 
@@ -133,7 +133,7 @@ El volumen de pruebas es de **36 casos**: **16 automatizados** con `pytest` (CP-
 | M-3 | **Sirve para cualquier proyecto y cualquier ciclo de vida.** §1 (*Scope*): "puede ser usada por cualquier organización, proyecto o actividad de prueba más pequeña" y "es aplicable en todos los modelos de ciclo de vida". | Se aplica a un proyecto académico pequeño con una aplicación Python/Streamlit y herramientas libres (`pytest`, GitHub). |
 | M-4 | **Pone el riesgo en el centro del plan.** §6.2.6 exige un registro de riesgos de producto y de proyecto con su nivel de exposición (probabilidad × impacto) y su tratamiento. | Con solo 72 h-persona, el riesgo decide qué se prueba primero y qué se acepta sin probar (sección 4). |
 | M-5 | **Permite conformidad adaptada (§2.2.2).** | Se puede omitir o combinar documentos justificando cada decisión, sin la carga documental de una organización grande (§2.3). |
-| M-6 | **Admite pruebas manuales y automatizadas.** Su resumen indica que sirve para pruebas funcionales y no funcionales, manuales y automatizadas, con guion o sin él. | Cubre a la vez los 16 casos en `pytest` y los 20 manuales. |
+| M-6 | **Admite pruebas manuales y automatizadas.** Su resumen indica que sirve para pruebas funcionales y no funcionales, manuales y automatizadas, con guion o sin él. | Cubre a la vez los 18 casos en `pytest` y los 18 manuales. |
 
 #### 2.4.2 Por qué el plan cita también las partes 1, 2 y 4
 
@@ -513,44 +513,69 @@ El segundo par es además un ejemplo de falso positivo: son barrios distintos qu
 
 **Casos de prueba:**
 
-| ID CP | Técnica | Precondición | Entrada / Pasos | Resultado esperado | Nivel |
+| ID CP | Técnica | Precondición | Entrada / Pasos | Resultado esperado | Nivel | Avance | Estado |
+|---|---|---|---|---|---|---|---|
+| CP-01 | PCE | — | `limpiar("Laureles Estadío")` | `"LAURELES ESTADIO"` | Unitario | 100 % | Aprobado (pytest, Anexo A) |
+| CP-02 | PCE | — | `limpiar("  La  Candelaria!! ")` | `"LA CANDELARIA"` | Unitario | 100 % | Aprobado (pytest, Anexo A) |
+| CP-03 | PCE / AVL | — | `limpiar("")`, `limpiar(None)` | `""` | Unitario | 100 % | Aprobado (pytest, Anexo A) |
+| CP-04 | PCE | — | `limpiar("Castilla-Ñ")` | `"CASTILLA N"` | Unitario | 100 % | Aprobado (pytest, Anexo A) |
+| CP-05 | AVL | Lista de barrios | `encontrar_mejor_match` con similitud justo por encima y por debajo de 0.7 | Devuelve coincidencia / `None` respectivamente | Unitario | 100 % | Aprobado (pytest, Anexo A) |
+| CP-06 | Adivinación de errores | Datos cargados | Recorrer todos los *features* del GeoJSON y comparar `comuna_df` con la comuna oficial del polígono | 0 barrios asignados a comuna errónea; lista de no emparejados documentada | Integración | 100 % | Aprobado (pytest, `test_integracion_geojson.py`; Anexo A.6) |
+| CP-07 | Adivinación de errores | Datos cargados | Verificar barrios homónimos en comunas distintas | Cada uno conserva su propia comuna | Integración | 100 % | Aprobado (pytest, `test_integracion_geojson.py`; Anexo A.6) |
+| CP-08 | PCE | — | `map_categoria` con clases V1–V5 (5 valores) | Categoría correspondiente según tabla 5.2 | Unitario | 100 % | Aprobado (pytest, Anexo A) |
+| CP-09 | PCE | — | `map_categoria` con I1–I2 (`NaN`, `""`, "NS/NR") | `"No sabe"` | Unitario | 100 % | Aprobado (pytest, Anexo A) |
+| CP-10 | PCE | — | `map_categoria("MUY MALA")` y `"Muy Mala "` | `"Muy mala"` (no `"Mala"`) | Unitario | 100 % | Aprobado (pytest, Anexo A) |
+| CP-11 | AVL | DataFrame sintético | 10 respuestas, 0 negativas | % negativo = 0.0 | Unitario | 100 % | Aprobado (pytest, Anexo A) |
+| CP-12 | AVL | DataFrame sintético | 10 respuestas, 10 negativas | % negativo = 100.0 | Unitario | 100 % | Aprobado (pytest, Anexo A) |
+| CP-13 | AVL | DataFrame sintético | 3 respuestas: 1 Mala, 1 Buena, 1 No sabe | % negativo = 33.3 | Unitario | 100 % | Aprobado (pytest, Anexo A) |
+| CP-14 | AVL | — | DataFrame vacío | `(None, None, None)` sin excepción | Unitario | 100 % | Aprobado (pytest, Anexo A) |
+| CP-15 | Escenario | Barrio real seleccionado | Comparar % del gráfico "Resumen por variable" con cálculo manual en hoja de cálculo | Diferencia ≤ 0.1 puntos | Sistema | 0 % | Pendiente — ver tabla de casos no completados |
+| CP-16 | Escenario | Barrio con ≥ 2 estratos | Gráfico "Por estrato": sumar porcentajes de cada barra | Suma = 100 % ± 1 por estrato | Sistema | 0 % | Pendiente — ver tabla de casos no completados |
+| CP-17 | PCE | DataFrame sintético | Columna estrato con enteros (`1, 2, 3`) | Etiquetas "Estrato 1..3"; filtro con 3 opciones | Unitario | 100 % | Aprobado (pytest, Anexo A) |
+| CP-18 | PCE | DataFrame sintético | Columna estrato con decimales (`1.0, 2.0`, `NaN`) | Etiquetas "Estrato 1", "Estrato 2"; filtro no vacío | Unitario | 100 % | Aprobado tras corregir DEF-001 (Anexo A.6) |
+| CP-19 | PCE | Barrio real | Aplicar filtro "Estrato 3" en el modal | Los tres gráficos y el conteo reflejan solo estrato 3 | Sistema | 0 % | Pendiente — ver tabla de casos no completados |
+| CP-20 | PCE | Archivos válidos | Iniciar aplicación | Mapa con todas las comunas coloreadas, sin errores | Sistema | 100 % | Aprobado en Edge (21/11): mapa con todas las comunas, sin errores |
+| CP-21 | PCE | Renombrar `medellin_debug.geojson` | Iniciar aplicación | Mensaje "Error cargando GeoJSON local", la app no se detiene | Sistema | 100 % | Aprobado (21/11): mensaje "Error cargando GeoJSON local", la app no se detiene |
+| CP-22 | PCE | Renombrar `ECV_2025_Limpio.xlsx` | Iniciar aplicación | Mensaje de error controlado y la app se detiene sin excepción no controlada | Sistema | 100 % | Aprobado tras corregir DEF-002 (Anexo A.6) |
+| CP-23 | TE | E0 | Clic en una comuna | Transición a E1: solo barrios de esa comuna, sidebar con "Comuna activa" | Sistema | 0 % | Pendiente — ver tabla de casos no completados |
+| CP-24 | TE | E1 | Clic en un barrio | Transición a E2: modal de estadísticas con nombre de barrio y comuna correctos | Sistema | 0 % | Pendiente — ver tabla de casos no completados |
+| CP-25 | TE | E2 | Clic en barra "Aire" o botón "💨 Aire" | Transición a E3: modal de detalle con la variable Aire | Sistema | 0 % | Pendiente — ver tabla de casos no completados |
+| CP-26 | TE | E3 | "← Volver" | Retorna a E2 del mismo barrio | Sistema | 0 % | Pendiente — ver tabla de casos no completados |
+| CP-27 | TE | E1b | "❌ Quitar" y luego "⬅️ Volver a todas las comunas" | E1 sin barrio y luego E0 con zoom/centro inicial | Sistema | 0 % | Pendiente — ver tabla de casos no completados |
+| CP-28 | TE (transición inválida) | E2 abierto | Cerrar modal y pulsar F5 / recargar | No se reabre un modal sin barrio seleccionado; sin excepciones | Sistema | 0 % | Pendiente — ver tabla de casos no completados |
+| CP-29 | Tabla de decisión | Vista general | Reglas D1–D6 de la tabla 5.2 | Estado del selector según tabla | Sistema | 0 % | Pendiente — ver tabla de casos no completados |
+| CP-30 | AVL | 3 variables activas | Seleccionar una 4.ª variable | Quedan 3; se descarta la primera elegida; texto de ayuda "3 variables activas (máximo)" | Sistema | 0 % | Pendiente — ver tabla de casos no completados |
+| CP-31 | Escenario | Comuna activa con 1 variable | Comparar color de 5 barrios con su categoría predominante calculada | Color = color de la leyenda para esa categoría | Sistema | 0 % | Pendiente — ver tabla de casos no completados |
+| CP-32 | Adivinación de errores | Equipo limpio con Python 3.11+ | Crear `venv`, `pip install -r requirements.txt`, `streamlit run dashboard.py` | Aplicación inicia sin errores; se registran versiones instaladas | Instalación | 100 % | Aprobado (21/11): Python 3.12.6, streamlit 1.67.0, pandas 3.1.1, plotly 7.1.0, folium 1.0.0, streamlit-folium 0.27.4, openpyxl 3.1.5 |
+| CP-33 | Escenario | Despliegue accesible por URL | Escanear QR desde móvil y navegar E0 → E2 | Mapa y modal legibles y operables | Sistema | 0 % | Pendiente — ver tabla de casos no completados |
+| CP-34 | Escenario | — | Ejecutar CP-20, CP-23 y CP-24 en Chrome, Firefox y Edge | Resultado idéntico en los tres navegadores | Sistema | 11 % | En curso: 1 de 9 ejecuciones (CP-20 en Edge) |
+| CP-35 | PCE / Adivinación de errores | `ECV_2025_Limpio.xlsx` (DP-01) | Para las 5 variables, comparar los valores únicos con el catálogo de 6 categorías y aplicar `map_categoria()` a cada valor | Ningún valor fuera del catálogo ni nulo; `map_categoria(v) == v` para todos | Integración | 100 % | Aprobado (pytest, Anexo A) |
+| CP-36 | PCE | `ECV_2025_Limpio.xlsx` (DP-01) | Revisar tipo, rango y nulos de la columna `11. Estrato` | Tipo entero, valores entre 1 y 6, 0 nulos | Integración | 100 % | Aprobado (pytest, Anexo A) |
+
+**Cómo se calcula el avance:** porcentaje de ejecuciones previstas del caso que ya se hicieron con evidencia (resultado de `pytest`, captura o registro en el Anexo A). Un caso con una sola ejecución está en 0 % o en 100 %; CP-34 tiene 9 ejecuciones (3 casos × 3 navegadores). Corte: **21/11/2026**.
+
+**Resumen de avance:**
+
+| Grupo | Casos | Completados | Avance |
+|---|---|---|---|
+| Riesgos Críticos y Altos (CP-01 a CP-28, CP-32, CP-35, CP-36) | 31 | 22 | **71 %** |
+| Riesgos Medios (CP-29 a CP-31, CP-33, CP-34) | 5 | 0 | **2 %** (solo CP-34 iniciado) |
+| **Total del plan** | **36** | **22** | **61 %** |
+| Por forma de ejecución: automatizados | 18 | 18 | 100 % |
+| Por forma de ejecución: manuales | 18 | 4 (CP-20, CP-21, CP-22, CP-32) | 22 % |
+
+**Casos no completados: causa y plan de mejora:**
+
+| Casos | Avance | Por qué no se ha completado | Plan de mejora | Responsable | Fecha |
 |---|---|---|---|---|---|
-| CP-01 | PCE | — | `limpiar("Laureles Estadío")` | `"LAURELES ESTADIO"` | Unitario |
-| CP-02 | PCE | — | `limpiar("  La  Candelaria!! ")` | `"LA CANDELARIA"` | Unitario |
-| CP-03 | PCE / AVL | — | `limpiar("")`, `limpiar(None)` | `""` | Unitario |
-| CP-04 | PCE | — | `limpiar("Castilla-Ñ")` | `"CASTILLA N"` | Unitario |
-| CP-05 | AVL | Lista de barrios | `encontrar_mejor_match` con similitud justo por encima y por debajo de 0.7 | Devuelve coincidencia / `None` respectivamente | Unitario |
-| CP-06 | Adivinación de errores | Datos cargados | Recorrer todos los *features* del GeoJSON y comparar `comuna_df` con la comuna oficial del polígono | 0 barrios asignados a comuna errónea; lista de no emparejados documentada | Integración |
-| CP-07 | Adivinación de errores | Datos cargados | Verificar barrios homónimos en comunas distintas | Cada uno conserva su propia comuna | Integración |
-| CP-08 | PCE | — | `map_categoria` con clases V1–V5 (5 valores) | Categoría correspondiente según tabla 5.2 | Unitario |
-| CP-09 | PCE | — | `map_categoria` con I1–I2 (`NaN`, `""`, "NS/NR") | `"No sabe"` | Unitario |
-| CP-10 | PCE | — | `map_categoria("MUY MALA")` y `"Muy Mala "` | `"Muy mala"` (no `"Mala"`) | Unitario |
-| CP-11 | AVL | DataFrame sintético | 10 respuestas, 0 negativas | % negativo = 0.0 | Unitario |
-| CP-12 | AVL | DataFrame sintético | 10 respuestas, 10 negativas | % negativo = 100.0 | Unitario |
-| CP-13 | AVL | DataFrame sintético | 3 respuestas: 1 Mala, 1 Buena, 1 No sabe | % negativo = 33.3 | Unitario |
-| CP-14 | AVL | — | DataFrame vacío | `(None, None, None)` sin excepción | Unitario |
-| CP-15 | Escenario | Barrio real seleccionado | Comparar % del gráfico "Resumen por variable" con cálculo manual en hoja de cálculo | Diferencia ≤ 0.1 puntos | Sistema |
-| CP-16 | Escenario | Barrio con ≥ 2 estratos | Gráfico "Por estrato": sumar porcentajes de cada barra | Suma = 100 % ± 1 por estrato | Sistema |
-| CP-17 | PCE | DataFrame sintético | Columna estrato con enteros (`1, 2, 3`) | Etiquetas "Estrato 1..3"; filtro con 3 opciones | Unitario |
-| CP-18 | PCE | DataFrame sintético | Columna estrato con decimales (`1.0, 2.0`, `NaN`) | Etiquetas "Estrato 1", "Estrato 2"; filtro no vacío | Unitario |
-| CP-19 | PCE | Barrio real | Aplicar filtro "Estrato 3" en el modal | Los tres gráficos y el conteo reflejan solo estrato 3 | Sistema |
-| CP-20 | PCE | Archivos válidos | Iniciar aplicación | Mapa con todas las comunas coloreadas, sin errores | Sistema |
-| CP-21 | PCE | Renombrar `medellin_debug.geojson` | Iniciar aplicación | Mensaje "Error cargando GeoJSON local", la app no se detiene | Sistema |
-| CP-22 | PCE | Renombrar `ECV_2025_Limpio.xlsx` | Iniciar aplicación | Comportamiento documentado (actualmente excepción no controlada → se registra defecto si aplica) | Sistema |
-| CP-23 | TE | E0 | Clic en una comuna | Transición a E1: solo barrios de esa comuna, sidebar con "Comuna activa" | Sistema |
-| CP-24 | TE | E1 | Clic en un barrio | Transición a E2: modal de estadísticas con nombre de barrio y comuna correctos | Sistema |
-| CP-25 | TE | E2 | Clic en barra "Aire" o botón "💨 Aire" | Transición a E3: modal de detalle con la variable Aire | Sistema |
-| CP-26 | TE | E3 | "← Volver" | Retorna a E2 del mismo barrio | Sistema |
-| CP-27 | TE | E1b | "❌ Quitar" y luego "⬅️ Volver a todas las comunas" | E1 sin barrio y luego E0 con zoom/centro inicial | Sistema |
-| CP-28 | TE (transición inválida) | E2 abierto | Cerrar modal y pulsar F5 / recargar | No se reabre un modal sin barrio seleccionado; sin excepciones | Sistema |
-| CP-29 | Tabla de decisión | Vista general | Reglas D1–D6 de la tabla 5.2 | Estado del selector según tabla | Sistema |
-| CP-30 | AVL | 3 variables activas | Seleccionar una 4.ª variable | Quedan 3; se descarta la primera elegida; texto de ayuda "3 variables activas (máximo)" | Sistema |
-| CP-31 | Escenario | Comuna activa con 1 variable | Comparar color de 5 barrios con su categoría predominante calculada | Color = color de la leyenda para esa categoría | Sistema |
-| CP-32 | Adivinación de errores | Equipo limpio con Python 3.11+ | Crear `venv`, `pip install -r requirements.txt`, `streamlit run dashboard.py` | Aplicación inicia sin errores; se registran versiones instaladas | Instalación |
-| CP-33 | Escenario | Despliegue accesible por URL | Escanear QR desde móvil y navegar E0 → E2 | Mapa y modal legibles y operables | Sistema |
-| CP-34 | Escenario | — | Ejecutar CP-20, CP-23 y CP-24 en Chrome, Firefox y Edge | Resultado idéntico en los tres navegadores | Sistema |
-| CP-35 | PCE / Adivinación de errores | `ECV_2025_Limpio.xlsx` (DP-01) | Para las 5 variables, comparar los valores únicos con el catálogo de 6 categorías y aplicar `map_categoria()` a cada valor | Ningún valor fuera del catálogo ni nulo; `map_categoria(v) == v` para todos | Integración |
-| CP-36 | PCE | `ECV_2025_Limpio.xlsx` (DP-01) | Revisar tipo, rango y nulos de la columna `11. Estrato` | Tipo entero, valores entre 1 y 6, 0 nulos | Integración |
+| CP-15, CP-16, CP-19 (exactitud de porcentajes y filtro por estrato) | 0 % | Requieren la hoja de referencia DP-05 con el cálculo manual de 3 barrios, que aún no se ha elaborado. | (1) Elaborar DP-05 con 3 barrios de comunas distintas. (2) Automatizar el cálculo independiente con `pandas` y compararlo con `figuras_estadisticas_barrio()` como prueba de integración, para que se pueda repetir en cada regresión. (3) Verificar visualmente en la app un barrio. | Jeyson González (suplente: Mateo Villada) | 24–25/11 |
+| CP-23 a CP-28 (navegación y modales) | 0 % | Pruebas manuales de interfaz; a la fecha no hay registro de ejecución en el repositorio. La dedicación parcial del equipo (RP-04) retrasó la ejecución. El mapa Folium se dibuja dentro de un `iframe`, lo que impide automatizar los clics sobre los polígonos. | (1) Ejecución manual con capturas en `docs/resultados-pruebas-sistema.md`. (2) Automatizar con `streamlit.testing` (AppTest) las transiciones que no dependen del clic en el mapa (CP-26, CP-27, CP-28) modificando `session_state`. | Mateo Villada (suplente: Keyner Gil) | 24–25/11 |
+| CP-29, CP-30 (selector de variables) | 0 % | Igual que el grupo anterior: manuales y sin ejecutar. | Automatizar las reglas D1–D6 con AppTest pulsando los botones del selector (no dependen del mapa) y dejarlas en la suite de regresión. | Keyner Gil (suplente: Mateo Villada) | 25/11 |
+| CP-31 (colores del mapa) | 0 % | Necesita comparar el color de cada barrio con su categoría predominante; no se ha ejecutado. | Calcular la categoría predominante de 5 barrios con `pandas` y compararla con el color en la app. | Mateo Villada | 25/11 |
+| CP-33 (móvil vía QR) | 0 % | La app no está desplegada en una URL pública, así que el QR no se puede probar. | Desplegar en Streamlit Community Cloud; antes, fijar las versiones de `requirements.txt` con las verificadas en CP-32 (riesgo R-13). | Jeyson González | 26/11 |
+| CP-34 (Chrome, Firefox y Edge) | 11 % | Solo se ejecutó CP-20 en Edge. | Repetir CP-20, CP-23 y CP-24 en Chrome y Firefox junto con la ejecución de CP-23/CP-24. | Mateo Villada | 25/11 |
+
+Con estos pendientes **no se cumple todavía** el criterio de finalización de §5.5 ("100 % de los casos de riesgos Críticos y Altos"): faltan 9 de 31. El plan de mejora los cubre dentro de la reserva de la Semana 3 (RP-01).
 
 **Matriz de trazabilidad (Riesgo → Condición → Caso):**
 
@@ -648,7 +673,7 @@ El segundo par es además un ejemplo de falso positivo: son barrios distintos qu
 | Subproceso | Casos | Forma de ejecución |
 |---|---|---|
 | Pruebas unitarias (componente) | CP-01 a CP-05, CP-08 a CP-14, CP-17, CP-18 | Automatizada (`pytest`) |
-| Pruebas de integración de datos | CP-06, CP-07, CP-35, CP-36 | CP-35 y CP-36 automatizadas; CP-06 y CP-07 manuales |
+| Pruebas de integración de datos | CP-06, CP-07, CP-35, CP-36 | Automatizada (`pytest`) |
 | Pruebas de sistema (funcionales y de compatibilidad) | CP-15, CP-16, CP-19 a CP-31, CP-33, CP-34 | Manual |
 | Pruebas de instalación | CP-32 | Manual |
 
