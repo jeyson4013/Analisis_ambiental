@@ -900,7 +900,18 @@ Campos según 29119-3 §7.12.5 (*Incident details*):
 | Severidad (§7.12.5.5) | Baja: hoy no se manifiesta, porque CP-36 confirma que el Excel guarda el estrato como entero. Contorno conocido: mantener la columna como entero. |
 | Prioridad (§7.12.5.6) | P3 propuesta; confirmar con el gestor de defectos. |
 | Riesgo (§7.12.5.7) | Confirma el riesgo R-04; su exposición no cambia porque el defecto es latente. |
-| Estado (§7.12.5.8) | Abierto. |
+| Estado (§7.12.5.8) | **Cerrado** (21/11/2026): corregido con la función `estrato_entero()` en `dashboard.py` y verificado por CP-18 y CP-18b (ver A.6). |
+
+| Campo (§7.12.5) | DEF-002 |
+|---|---|
+| Fecha (§7.12.5.1) | 21/11/2026 |
+| Originador (§7.12.5.2) | Jeyson González, gestor de configuración y defectos |
+| Contexto (§7.12.5.3) | Elemento TI-01 (`cargar_datos()`) de `dashboard.py`; caso CP-22; subproceso de pruebas de sistema; aplicación ejecutada sin el archivo `ECV_2025_Limpio.xlsx`. |
+| Descripción (§7.12.5.4) | Si falta el Excel, `pd.read_excel()` lanza `FileNotFoundError` sin capturar y la aplicación muestra una traza técnica en lugar de un mensaje. La carga del GeoJSON sí estaba protegida (`try/except` + `st.error`). Reproducible: renombrar el Excel y ejecutar `streamlit run dashboard.py`. |
+| Severidad (§7.12.5.5) | Media: la aplicación queda inutilizable, pero solo si falta el archivo de datos. |
+| Prioridad (§7.12.5.6) | P2. |
+| Riesgo (§7.12.5.7) | Confirma el riesgo R-05. |
+| Estado (§7.12.5.8) | **Cerrado** (21/11/2026): `cargar_datos()` captura el error, muestra un mensaje con `st.error` y detiene la app con `st.stop()` (ver A.6). |
 
 La prueba de CP-18 usa `xfail(strict=True)`: cuando se corrija DEF-001 pasará a "XPASS" y `pytest` lo reportará como fallo, para recordar quitar la marca y cerrar el defecto.
 
@@ -921,7 +932,26 @@ Los tres defectos fueron detectados.
 - A-05 (extracción de funciones) se resolvió sin crear `utils.py` ni modificar `dashboard.py`; ver §5.4.
 - RP-02 confirmado: `env/` y `node_modules/` siguen versionados en `master` (8 192 archivos) aunque estén en `.gitignore`, y la carpeta `env/` no es reutilizable. La ejecución usó un entorno `.venv` nuevo. Se recomienda retirarlos del control de versiones con `git rm -r --cached env node_modules`.
 
-### A.6 Aplicación de la norma en el Anexo A
+### A.6 Segunda ejecución: corrección de defectos y regresión (21/11/2026)
+
+| Campo | Valor |
+|---|---|
+| Ejecutor | Jeyson González |
+| Rama | `jeysongonzalez` |
+| Entorno | Windows; Python 3.12 en `.venv` nuevo; dependencias de `requirements.txt` y `requirements-test.txt`. |
+| Cambios en `dashboard.py` | (1) Nueva función `estrato_entero()`, usada en la etiqueta de estrato de `figuras_estadisticas_barrio()` y en los dos filtros de estrato de los modales (DEF-001). (2) `cargar_datos()` con `try/except`, `st.error` y `st.stop()` (DEF-002). |
+| Cambios en `tests/` | Se retira el `xfail` de CP-18; se agregan CP-18b (`estrato_entero`) y `test_integracion_geojson.py` (CP-06, CP-07). |
+| Resultado global | **49 pruebas aprobadas, 0 fallidas** (`python -m pytest -v`). |
+
+| Caso | Antes | Después |
+|---|---|---|
+| CP-18 / CP-18b (DEF-001) | Fallido: etiquetas `{'1.0', '2.0'}` en lugar de `{'Estrato 1', 'Estrato 2'}`. | Aprobado. Al corregir, la marca `xfail(strict=True)` reportó `XPASS(strict)`, como estaba previsto, y se retiró. |
+| CP-22 (DEF-002) | Fallido: excepción no controlada `FileNotFoundError: ... 'ECV_2025_Limpio.xlsx'`. | Aprobado: mensaje "No se pudo cargar el archivo de datos ECV_2025_Limpio.xlsx…" y la app se detiene de forma controlada. Con el Excel presente, la app carga sin errores. |
+| CP-06 (R-01, Crítico) | — (no ejecutado en la primera corrida) | Aprobado: 332 polígonos, 0 asignados a una comuna ajena (299 por coincidencia exacta, 5 por barrio aproximado, 26 por comuna y 2 sin comuna en el GeoJSON). |
+| CP-07 (R-01, Crítico) | — | Aprobado: 10 nombres de barrio repetidos en comunas distintas (p. ej. "San Pablo" en Popular y Altavista); todos conservan su comuna. |
+| Regresión (suite completa) | 39 aprobadas + 1 `xfail` | 49 aprobadas |
+
+### A.7 Aplicación de la norma en el Anexo A
 
 | Punto | Qué exige la ISO 29119 | Cómo se aplicó | Por qué se aplicó así |
 |---|---|---|---|

@@ -126,14 +126,19 @@ def test_cp17_estratos_enteros(dash):
     assert etiquetas_estrato(dash, [1, 2, 3]) == {"Estrato 1", "Estrato 2", "Estrato 3"}
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="DEF-001 (R-04): con estrato decimal (1.0) str(x).isdigit() es False y la "
-           "etiqueta queda '1.0' en vez de 'Estrato 1'. Quitar este xfail al corregirlo.",
-)
 def test_cp18_estratos_decimales(dash):
+    """DEF-001 corregido: antes las etiquetas quedaban {'1.0', '2.0'}."""
     etiquetas = etiquetas_estrato(dash, [1.0, 2.0, 2.0, 1.0])
     assert {"Estrato 1", "Estrato 2"} <= etiquetas
+
+
+@pytest.mark.parametrize("entrada, esperado", [
+    (3, 3), (3.0, 3), ("3", 3),                       # PCE: clases válidas (entero, decimal, texto)
+    (float("nan"), None), (None, None), ("Sin dato", None), (2.5, None),  # clases inválidas
+])
+def test_cp18b_estrato_entero_alimenta_filtro_de_estratos(dash, entrada, esperado):
+    """DEF-001: el filtro de estratos de los modales usa estrato_entero(); antes quedaba vacío con 1.0."""
+    assert dash["estrato_entero"](entrada) == esperado
 
 
 # ───────────────────── TI-06 · geometría (R-09, prueba opcional) ─────────────────────

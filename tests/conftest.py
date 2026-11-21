@@ -26,6 +26,7 @@ FUNCIONES = {
     "limpiar",
     "encontrar_mejor_match",
     "map_categoria",
+    "estrato_entero",
     "centroide_feature",
     "bounds_from_features",
     "figuras_estadisticas_barrio",

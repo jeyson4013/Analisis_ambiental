@@ -108,6 +108,14 @@ def map_categoria(x):
     elif "mala" in x: return "Mala"
     else: return "No sabe"
 
+def estrato_entero(x):
+    """Número de estrato como int si x es 3, 3.0 o "3"; None si no es un entero (DEF-001)."""
+    try:
+        n = float(x)
+    except (TypeError, ValueError):
+        return None
+    return int(n) if n.is_integer() else None
+
 def centroide_feature(feat):
     try:
         geom = feat["geometry"]
@@ -201,7 +209,12 @@ def render_variable_btns(opciones, val_actual, key_prefix, state_key):
 
 @st.cache_data(show_spinner="Cargando datos...")
 def cargar_datos():
-    df = pd.read_excel("ECV_2025_Limpio.xlsx")
+    try:
+        df = pd.read_excel("ECV_2025_Limpio.xlsx")
+    except Exception as e:
+        # CP-22: sin el Excel la app no puede funcionar; se informa y se detiene de forma controlada.
+        st.error(f"No se pudo cargar el archivo de datos ECV_2025_Limpio.xlsx: {e}")
+        st.stop()
     df = df[df["4. Ubicación geográfica - Municipio"].str.contains("Medell", na=False)]
     
     # Ajuste de nombres conocidos para compatibilidad con el mapa
@@ -302,7 +315,7 @@ def figuras_estadisticas_barrio(df_local, variable_activa, estratos_sel=None, al
     # Filtrado por estrato (aplica a las tres figuras)
     df_filt = df_local.copy()
     df_filt["Estrato"] = df_filt["11. Estrato"].apply(
-        lambda x: f"Estrato {int(x)}" if pd.notna(x) and str(x).isdigit() else str(x)
+        lambda x: f"Estrato {estrato_entero(x)}" if estrato_entero(x) is not None else str(x)
     )
     if estratos_sel:
         df_filt = df_filt[df_filt["Estrato"].isin(estratos_sel)]
@@ -548,7 +561,7 @@ def modal_estadisticas_barrio(df_local, barrio_nombre, comuna_nombre):
         unsafe_allow_html=True,
     )
     estratos_raw = sorted(
-        [int(e) for e in df_local["11. Estrato"].dropna().unique() if str(e).isdigit()]
+        {estrato_entero(e) for e in df_local["11. Estrato"].dropna().unique()} - {None}
     )
     estratos_disponibles = [f"Estrato {e}" for e in estratos_raw]
     sel_estratos = st.multiselect(
@@ -756,7 +769,7 @@ def modal_detalle_variable(df_local, variable_nombre, barrio_nombre, comuna_nomb
         unsafe_allow_html=True,
     )
     estratos_raw = sorted(
-        [int(e) for e in df_local["11. Estrato"].dropna().unique() if str(e).isdigit()]
+        {estrato_entero(e) for e in df_local["11. Estrato"].dropna().unique()} - {None}
     )
     estratos_disponibles = [f"Estrato {e}" for e in estratos_raw]
     sel_estratos_det = st.multiselect(
