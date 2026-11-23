@@ -15,9 +15,7 @@
 | Identificador | `PP-DAM-2026-001` |
 | Título | Plan de Pruebas del Dashboard Ambiental Medellín |
 | Tipo de documento | Plan de Pruebas de Proyecto (*Project Test Plan*) |
-| Versión | 1.2 |
 | Estado | Borrador para aprobación |
-| Fecha de emisión | 10/11/2026 (v1.1: 13/11/2026; v1.2: 17/11/2026) |
 | Ubicación | Repositorio `jeyson4013/Analisis_ambiental` — archivo `pruebasdesoftware.md` |
 
 ### 1.2 Organización emisora y autores
@@ -48,6 +46,7 @@
 | 1.0 | 10/11/2026 | Jeyson González | Plan completo publicado en `master` (PR #2). Pendiente de aprobación. |
 | 1.1 | 13/11/2026 | Keyner Gil | Equipo de pruebas de 3 personas (§1.2, §2.3, §3.3, §3.4, §7.1); capacidad recalculada (§6.2); nuevos casos CP-35 y CP-36 (§5.3); preparación de pruebas unitarias implementada en `tests/conftest.py` (§5.4); Anexo A con la primera ejecución de las pruebas automatizadas y el defecto DEF-001. |
 | 1.2 | 17/11/2026 | Jeyson González | Justificación del marco normativo (§2.4: por qué ISO 29119 y por qué no otras normas); apartado "Aplicación de la norma" al final de cada sección; comunicación de las pruebas (§7.2) y métricas (§5.5); Anexo B (matriz de conformidad). Alineación con la edición **29119-3:2013**: cada cláusula citada se verificó contra el texto de la norma; se retiran los códigos de proceso de 29119-2 (TP, TD, TE…) y se usan los nombres de proceso que da 29119-3; se agregan los elementos obligatorios del plan que faltaban (subprocesos, entregables, re-pruebas y regresión, desviaciones de la estrategia organizacional, §5.6) y los campos del informe de incidencias (Anexo A.3). Correcciones: conteo de casos (36 = 16 automatizados + 20 manuales), mapeo de actividades a procesos (§6.1), referencias a casos en §4.3, §5.2, §5.4 y §5.5, y eliminación de la estructura obsoleta con `utils.py`. |
+| 1.3 | 22/11/2026 | Mateo Villada | Ejecución de los casos manuales de sistema de Mateo Villada (CP-23 a CP-34): CP-23 a CP-30, CP-33 y CP-34 aprobados con evidencia; CP-31 en verificación parcial (§5.3). Compatibilidad: se reemplaza Firefox por Brave (§3.2, §5.3, §5.4); CP-34 ejecutado en Chrome, Brave y Edge. Resumen de avance y plan de mejora actualizados (§5.3), entregables (§5.6) y nuevo Anexo A.8. |
 
 El documento se versiona en Git junto al código fuente. Cada modificación se realiza mediante *commit* con mensaje descriptivo y, para cambios de alcance, mediante *Pull Request* revisado por al menos un integrante distinto del autor.
 
@@ -241,7 +240,7 @@ En resumen: 29119-3 dice **qué documentar**, pero para escribir ese contenido r
 - **16 casos automatizados** con `pytest`: funciones puras (TI-03, TI-04, TI-05, TI-09) y verificación de los datos reales del Excel (TI-12, CP-35 y CP-36).
 - Pruebas **manuales de integración** de datos (Excel ↔ GeoJSON ↔ mapa).
 - Pruebas **manuales de sistema** funcionales de la interfaz (mapa, filtros, modales, navegación).
-- Pruebas de **compatibilidad** básica en Chrome, Firefox y Edge (escritorio) y un navegador móvil (acceso vía QR).
+- Pruebas de **compatibilidad** básica en Chrome, Brave y Edge (escritorio) y un navegador móvil (acceso vía QR).
 - Pruebas de **instalación/despliegue** desde un entorno limpio con `requirements.txt`.
 - Verificación de **exactitud de datos** (porcentajes y conteos) contra cálculos independientes.
 
@@ -537,45 +536,41 @@ El segundo par es además un ejemplo de falso positivo: son barrios distintos qu
 | CP-20 | PCE | Archivos válidos | Iniciar aplicación | Mapa con todas las comunas coloreadas, sin errores | Sistema | 100 % | Aprobado en Edge (21/11): mapa con todas las comunas, sin errores |
 | CP-21 | PCE | Renombrar `medellin_debug.geojson` | Iniciar aplicación | Mensaje "Error cargando GeoJSON local", la app no se detiene | Sistema | 100 % | Aprobado (21/11): mensaje "Error cargando GeoJSON local", la app no se detiene |
 | CP-22 | PCE | Renombrar `ECV_2025_Limpio.xlsx` | Iniciar aplicación | Mensaje de error controlado y la app se detiene sin excepción no controlada | Sistema | 100 % | Aprobado tras corregir DEF-002 (Anexo A.6) |
-| CP-23 | TE | E0 | Clic en una comuna | Transición a E1: solo barrios de esa comuna, sidebar con "Comuna activa" | Sistema | 0 % | Pendiente — ver tabla de casos no completados |
-| CP-24 | TE | E1 | Clic en un barrio | Transición a E2: modal de estadísticas con nombre de barrio y comuna correctos | Sistema | 0 % | Pendiente — ver tabla de casos no completados |
-| CP-25 | TE | E2 | Clic en barra "Aire" o botón "💨 Aire" | Transición a E3: modal de detalle con la variable Aire | Sistema | 0 % | Pendiente — ver tabla de casos no completados |
-| CP-26 | TE | E3 | "← Volver" | Retorna a E2 del mismo barrio | Sistema | 0 % | Pendiente — ver tabla de casos no completados |
-| CP-27 | TE | E1b | "❌ Quitar" y luego "⬅️ Volver a todas las comunas" | E1 sin barrio y luego E0 con zoom/centro inicial | Sistema | 0 % | Pendiente — ver tabla de casos no completados |
-| CP-28 | TE (transición inválida) | E2 abierto | Cerrar modal y pulsar F5 / recargar | No se reabre un modal sin barrio seleccionado; sin excepciones | Sistema | 0 % | Pendiente — ver tabla de casos no completados |
-| CP-29 | Tabla de decisión | Vista general | Reglas D1–D6 de la tabla 5.2 | Estado del selector según tabla | Sistema | 0 % | Pendiente — ver tabla de casos no completados |
-| CP-30 | AVL | 3 variables activas | Seleccionar una 4.ª variable | Quedan 3; se descarta la primera elegida; texto de ayuda "3 variables activas (máximo)" | Sistema | 0 % | Pendiente — ver tabla de casos no completados |
-| CP-31 | Escenario | Comuna activa con 1 variable | Comparar color de 5 barrios con su categoría predominante calculada | Color = color de la leyenda para esa categoría | Sistema | 0 % | Pendiente — ver tabla de casos no completados |
+| CP-23 | TE | E0 | Clic en una comuna | Transición a E1: solo barrios de esa comuna, sidebar con "Comuna activa" | Sistema | 100 % | Aprobado (22/11): captura `13_CP23_comuna_activa` |
+| CP-24 | TE | E1 | Clic en un barrio | Transición a E2: modal de estadísticas con nombre de barrio y comuna correctos | Sistema | 100 % | Aprobado (22/11): captura `14_CP24_modal_estadisticas` |
+| CP-25 | TE | E2 | Clic en barra "Aire" o botón "💨 Aire" | Transición a E3: modal de detalle con la variable Aire | Sistema | 100 % | Aprobado (22/11): captura `15_CP25_modal_detalle_aire` |
+| CP-26 | TE | E3 | "← Volver" | Retorna a E2 del mismo barrio | Sistema | 100 % | Aprobado (22/11): captura `16_CP26_volver_modal` |
+| CP-27 | TE | E1b | "❌ Quitar" y luego "⬅️ Volver a todas las comunas" | E1 sin barrio y luego E0 con zoom/centro inicial | Sistema | 100 % | Aprobado (22/11): capturas `CP27_quitar_volver_a_todas` |
+| CP-28 | TE (transición inválida) | E2 abierto | Cerrar modal y pulsar F5 / recargar | No se reabre un modal sin barrio seleccionado; sin excepciones | Sistema | 100 % | Aprobado (22/11): captura `18_CP28_recarga_F5` |
+| CP-29 | Tabla de decisión | Vista general | Reglas D1–D6 de la tabla 5.2 | Estado del selector según tabla | Sistema | 100 % | Aprobado (22/11): video `Cp29,30` (reglas D1 a D6) |
+| CP-30 | AVL | 3 variables activas | Seleccionar una 4.ª variable | Quedan 3; se descarta la primera elegida; texto de ayuda "3 variables activas (máximo)" | Sistema | 100 % | Aprobado (22/11): video `Cp29,30` |
+| CP-31 | Escenario | Comuna activa con 1 variable | Comparar color de 5 barrios con su categoría predominante calculada | Color = color de la leyenda para esa categoría | Sistema | Parcial | Verificación parcial (22/11): comparación hecha en parte de los 5 barrios previstos [indicar cuántos]; falta completar (ver tabla de casos no completados) |
 | CP-32 | Adivinación de errores | Equipo limpio con Python 3.11+ | Crear `venv`, `pip install -r requirements.txt`, `streamlit run dashboard.py` | Aplicación inicia sin errores; se registran versiones instaladas | Instalación | 100 % | Aprobado (21/11): Python 3.12.6, streamlit 1.67.0, pandas 3.1.1, plotly 7.1.0, folium 1.0.0, streamlit-folium 0.27.4, openpyxl 3.1.5 |
-| CP-33 | Escenario | Despliegue accesible por URL | Escanear QR desde móvil y navegar E0 → E2 | Mapa y modal legibles y operables | Sistema | 0 % | Pendiente — ver tabla de casos no completados |
-| CP-34 | Escenario | — | Ejecutar CP-20, CP-23 y CP-24 en Chrome, Firefox y Edge | Resultado idéntico en los tres navegadores | Sistema | 11 % | En curso: 1 de 9 ejecuciones (CP-20 en Edge) |
+| CP-33 | Escenario | Despliegue accesible por URL | Escanear QR desde móvil y navegar E0 → E2 | Mapa y modal legibles y operables | Sistema | 100 % | Aprobado (22/11): captura desde el teléfono `22_CP33_movil`; el QR funciona |
+| CP-34 | Escenario | — | Ejecutar CP-20, CP-23 y CP-24 en Chrome, Brave y Edge | Resultado idéntico en los tres navegadores | Sistema | 100 % | Aprobado (22/11): 9 de 9 ejecuciones; los 3 navegadores funcionaron en los 3 casos. Capturas `23_CP34_chrome`, `24_CP34_brave`, `25_CP34_edge` |
 | CP-35 | PCE / Adivinación de errores | `ECV_2025_Limpio.xlsx` (DP-01) | Para las 5 variables, comparar los valores únicos con el catálogo de 6 categorías y aplicar `map_categoria()` a cada valor | Ningún valor fuera del catálogo ni nulo; `map_categoria(v) == v` para todos | Integración | 100 % | Aprobado (pytest, Anexo A) |
 | CP-36 | PCE | `ECV_2025_Limpio.xlsx` (DP-01) | Revisar tipo, rango y nulos de la columna `11. Estrato` | Tipo entero, valores entre 1 y 6, 0 nulos | Integración | 100 % | Aprobado (pytest, Anexo A) |
 
-**Cómo se calcula el avance:** porcentaje de ejecuciones previstas del caso que ya se hicieron con evidencia (resultado de `pytest`, captura o registro en el Anexo A). Un caso con una sola ejecución está en 0 % o en 100 %; CP-34 tiene 9 ejecuciones (3 casos × 3 navegadores). Corte: **21/11/2026**.
+**Cómo se calcula el avance:** porcentaje de ejecuciones previstas del caso que ya se hicieron con evidencia (resultado de `pytest`, captura, video o registro en el Anexo A). Un caso con una sola ejecución está en 0 % o en 100 %; CP-34 tiene 9 ejecuciones (3 casos × 3 navegadores), las 9 hechas. Un caso con evidencia solo de una parte de sus ejecuciones se marca "Parcial" y no cuenta como completado (CP-31). Corte: **22/11/2026**.
 
 **Resumen de avance:**
 
 | Grupo | Casos | Completados | Avance |
 |---|---|---|---|
-| Riesgos Críticos y Altos (CP-01 a CP-28, CP-32, CP-35, CP-36) | 31 | 22 | **71 %** |
-| Riesgos Medios (CP-29 a CP-31, CP-33, CP-34) | 5 | 0 | **2 %** (solo CP-34 iniciado) |
-| **Total del plan** | **36** | **22** | **61 %** |
+| Riesgos Críticos y Altos (CP-01 a CP-28, CP-32, CP-35, CP-36) | 31 | 28 | **90 %** |
+| Riesgos Medios (CP-29 a CP-31, CP-33, CP-34) | 5 | 4 | **80 %** (CP-31 parcial) |
+| **Total del plan** | **36** | **32** | **89 %** |
 | Por forma de ejecución: automatizados | 18 | 18 | 100 % |
-| Por forma de ejecución: manuales | 18 | 4 (CP-20, CP-21, CP-22, CP-32) | 22 % |
+| Por forma de ejecución: manuales | 18 | 14 (CP-20 a CP-30, CP-32, CP-33, CP-34, salvo CP-31) | 78 % |
 
 **Casos no completados: causa y plan de mejora:**
 
 | Casos | Avance | Por qué no se ha completado | Plan de mejora | Responsable | Fecha |
 |---|---|---|---|---|---|
 | CP-15, CP-16, CP-19 (exactitud de porcentajes y filtro por estrato) | 0 % | Requieren la hoja de referencia DP-05 con el cálculo manual de 3 barrios, que aún no se ha elaborado. | (1) Elaborar DP-05 con 3 barrios de comunas distintas. (2) Automatizar el cálculo independiente con `pandas` y compararlo con `figuras_estadisticas_barrio()` como prueba de integración, para que se pueda repetir en cada regresión. (3) Verificar visualmente en la app un barrio. | Jeyson González (suplente: Mateo Villada) | 24–25/11 |
-| CP-23 a CP-28 (navegación y modales) | 0 % | Pruebas manuales de interfaz; a la fecha no hay registro de ejecución en el repositorio. La dedicación parcial del equipo (RP-04) retrasó la ejecución. El mapa Folium se dibuja dentro de un `iframe`, lo que impide automatizar los clics sobre los polígonos. | (1) Ejecución manual con capturas en `docs/resultados-pruebas-sistema.md`. (2) Automatizar con `streamlit.testing` (AppTest) las transiciones que no dependen del clic en el mapa (CP-26, CP-27, CP-28) modificando `session_state`. | Mateo Villada (suplente: Keyner Gil) | 24–25/11 |
-| CP-29, CP-30 (selector de variables) | 0 % | Igual que el grupo anterior: manuales y sin ejecutar. | Automatizar las reglas D1–D6 con AppTest pulsando los botones del selector (no dependen del mapa) y dejarlas en la suite de regresión. | Keyner Gil (suplente: Mateo Villada) | 25/11 |
-| CP-31 (colores del mapa) | 0 % | Necesita comparar el color de cada barrio con su categoría predominante; no se ha ejecutado. | Calcular la categoría predominante de 5 barrios con `pandas` y compararla con el color en la app. | Mateo Villada | 25/11 |
-| CP-33 (móvil vía QR) | 0 % | La app no está desplegada en una URL pública, así que el QR no se puede probar. | Desplegar en Streamlit Community Cloud; antes, fijar las versiones de `requirements.txt` con las verificadas en CP-32 (riesgo R-13). | Jeyson González | 26/11 |
-| CP-34 (Chrome, Firefox y Edge) | 11 % | Solo se ejecutó CP-20 en Edge. | Repetir CP-20, CP-23 y CP-24 en Chrome y Firefox junto con la ejecución de CP-23/CP-24. | Mateo Villada | 25/11 |
+| CP-31 (colores del mapa) | Parcial | Se comparó solo una parte de los 5 barrios previstos; falta el resto de la comparación contra la categoría predominante. | Completar los barrios restantes con el conteo (tabla dinámica o `pandas`) sobre `ECV_2025_Limpio.xlsx` y su captura `CP31_colores_vs_categoria`. | Mateo Villada | 25/11 |
 
-Con estos pendientes **no se cumple todavía** el criterio de finalización de §5.5 ("100 % de los casos de riesgos Críticos y Altos"): faltan 9 de 31. El plan de mejora los cubre dentro de la reserva de la Semana 3 (RP-01).
+Con estos pendientes **no se cumple todavía** el criterio de finalización de §5.5: faltan 3 de 31 casos de riesgo Crítico y Alto (CP-15, CP-16, CP-19) y los casos de riesgo Medio están en 80 % (4 de 5, con CP-31 parcial) frente al 90 % exigido. El plan de mejora los cubre dentro de la reserva de la Semana 3 (RP-01). La automatización con `streamlit.testing` (AppTest) de CP-26 a CP-30 queda como mejora opcional para la regresión de la Semana 3 (A-12).
 
 **Matriz de trazabilidad (Riesgo → Condición → Caso):**
 
@@ -606,7 +601,7 @@ Con estos pendientes **no se cumple todavía** el criterio de finalización de �
 | Python | 3.11 o superior, en entorno virtual nuevo (no usar la carpeta `env/` del repositorio). |
 | Dependencias | `requirements.txt` + `pytest` para pruebas automatizadas. |
 | Ejecución | `streamlit run dashboard.py` (local) o despliegue en Streamlit Community Cloud para la prueba móvil. |
-| Navegadores | Google Chrome, Mozilla Firefox, Microsoft Edge (últimas versiones); navegador móvil Android o iOS. |
+| Navegadores | Google Chrome, Brave y Microsoft Edge (últimas versiones); navegador del teléfono (Android o iOS). Firefox se retiró del plan en la v1.3: solo se usaba en CP-34. |
 | Control de versiones | Git / GitHub; ejecución sobre *commit* identificado y registrado en cada resultado. |
 | Registro de defectos | GitHub Issues con etiqueta `bug` y prioridad (`P1`–`P3`). |
 
@@ -683,7 +678,7 @@ Con estos pendientes **no se cumple todavía** el criterio de finalización de �
 |---|---|---|---|
 | Plan de pruebas (este documento, con la especificación de pruebas integrada) | `pruebasdesoftware.md` | Líder de pruebas | H1 (14/11) y cada nueva versión |
 | *Scripts* de prueba automatizados y datos sintéticos | `tests/`, `requirements-test.txt` | Ingeniero de pruebas automatizadas | 18–19/11 |
-| Registro de ejecución y resultados (automatizados y manuales) | Anexo A; `docs/resultados-pruebas-sistema.md` | Ingeniero de pruebas automatizadas; ejecutor de pruebas de sistema | Al ejecutar cada caso |
+| Registro de ejecución y resultados (automatizados y manuales) | Anexo A; capturas y videos en el repositorio de pruebas de GitHub | Ingeniero de pruebas automatizadas; ejecutor de pruebas de sistema | Al ejecutar cada caso |
 | Informes de incidencias | Anexo A.3 y GitHub *Issues* | Gestor de configuración y defectos | Al detectar cada defecto |
 | Hoja de referencia DP-05 | Repositorio | Gestor de configuración y defectos | Antes de CP-15 |
 | Informe de finalización | Repositorio | Líder de pruebas | H5 (28/11) |
@@ -976,6 +971,42 @@ Los tres defectos fueron detectados.
 | CP-07 (R-01, Crítico) | — | Aprobado: 10 nombres de barrio repetidos en comunas distintas (p. ej. "San Pablo" en Popular y Altavista); todos conservan su comuna. |
 | Regresión (suite completa) | 39 aprobadas + 1 `xfail` | 49 aprobadas |
 
+### A.8 Tercera ejecución: pruebas manuales de sistema (22/11/2026)
+
+| Campo | Valor |
+|---|---|
+| Ejecutor | Mateo Villada |
+| Fecha | 22/11/2026 |
+| Versión bajo prueba | `master` con las correcciones de A.6 (`dashboard.py` con DEF-001 y DEF-002 cerrados) [completar commit] |
+| Entorno | Windows; Chrome, Brave y Edge [completar versiones]; teléfono [completar modelo, sistema y navegador] |
+| Casos ejecutados | CP-23 a CP-31, CP-33 y CP-34 |
+| Evidencias | Capturas y videos en el repositorio de pruebas de GitHub |
+| Resultado global | **10 aprobados, 1 parcial (CP-31), 0 fallidos, 0 bloqueados** |
+
+| Caso | Resultado | Evidencia | Observaciones |
+|---|---|---|---|
+| CP-23 | Aprobado | `CP23_comuna_activa` | — |
+| CP-24 | Aprobado | `CP24_modal_estadisticas` | — |
+| CP-25 | Aprobado | `CP25_modal_detalle_aire` | — |
+| CP-26 | Aprobado | `CP26_volver_modal` | — |
+| CP-27 | Aprobado | `CP27_quitar_volver_a_todas` | — |
+| CP-28 | Aprobado | `CP28_recarga_F5` | — |
+| CP-29 | Aprobado | `Cp29,30` | Reglas D1 a D6 registradas en video. |
+| CP-30 | Aprobado | `Cp29,30` | Registrado en video. |
+| CP-31 | Parcial | `CP31_colores_vs_categoria` | Comparación hecha solo en parte de los 5 barrios; pendiente completar. |
+| CP-33 | Aprobado | `22_CP33_movil` | Captura desde el teléfono; el QR funciona. |
+| CP-34 | Aprobado | `23_CP34_chrome.png`, `24_CP34_brave.png`, `25_CP34_edge.png` | Ver tabla siguiente. |
+
+**CP-34: ejecuciones por navegador**
+
+| Caso | Chrome | Brave | Edge |
+|---|---|---|---|
+| CP-20 (la app inicia, mapa con todas las comunas) | ✔ | ✔ | ✔ |
+| CP-23 (clic en comuna) | ✔ | ✔ | ✔ |
+| CP-24 (clic en barrio, modal) | ✔ | ✔ | ✔ |
+
+No se registraron defectos nuevos en esta ejecución. Ningún caso quedó bloqueado ni fallido, por lo que no hubo eventos anómalos que registrar con hora e impacto (§7.11.4); el único evento relevante es la verificación parcial de CP-31.
+
 ### A.7 Aplicación de la norma en el Anexo A
 
 | Punto | Qué exige la ISO 29119 | Cómo se aplicó | Por qué se aplicó así |
@@ -984,8 +1015,9 @@ Los tres defectos fueron detectados.
 | A.2 Resultado por caso | 29119-3 §7.9 (*Actual Results*) y §7.10 (*Test Result*: aprobado, fallido o bloqueado). | Tabla caso → prueba `pytest` → número de entradas → Aprobado / Fallido. | §7.9 admite que una herramienta automatizada registre los resultados reales y §7.10 que la comparación con el esperado sea "totalmente automatizada"; eso hace `pytest`. La tabla traduce su salida a los IDs del plan, y el caso fallido se marca con el número de su incidencia (DEF-001), como sugiere el ejemplo de §7.10. |
 | A.3 Defectos | 29119-3 §7.12.5 (*Incident details*): fecha, originador, contexto, descripción reproducible, severidad, prioridad, riesgo y estado. | DEF-001 con los ocho campos; marca `xfail(strict=True)` en la prueba. | La marca `xfail` mantiene el defecto visible en cada ejecución sin bloquear la suite y avisa cuando se corrija. |
 | A.4 Capacidad de detección | La norma no lo exige; es una verificación adicional (idea de las pruebas de mutación). | Defectos introducidos a propósito en una copia de `dashboard.py`. | Demuestra que las pruebas que pasan no pasan "por defecto": si el código falla, la prueba lo detecta. |
+| A.8 Ejecución manual de sistema | 29119-3 §7.9 y §7.10 (resultado real y resultado de la prueba) y §7.11 (registro de ejecución). | Tabla por caso con resultado, evidencia (captura o video) y observaciones; tabla por navegador para CP-34. | Los casos manuales no tienen salida de herramienta; la captura o el video es la evidencia del resultado real, y su nombre enlaza cada caso con el repositorio de pruebas. |
 
-**Qué no se aplicó y por qué:** el registro de ejecución y los incidentes se anexan a este plan en lugar de ser documentos separados (§2.1 de la norma lo permite; ver §2.3). El registro de A.1 resume la sesión en una fila en lugar de listar cada evento con su hora (§7.11.4), porque la ejecución automatizada dura menos de 2 s y no tuvo eventos anómalos; la ejecución de los casos manuales sí registrará eventos con hora e impacto.
+**Qué no se aplicó y por qué:** el registro de ejecución y los incidentes se anexan a este plan en lugar de ser documentos separados (§2.1 de la norma lo permite; ver §2.3). El registro de A.1 resume la sesión en una fila en lugar de listar cada evento con su hora (§7.11.4), porque la ejecución automatizada dura menos de 2 s y no tuvo eventos anómalos; la ejecución de los casos manuales (A.8) se resume por caso y por navegador, sin eventos anómalos que registrar con hora e impacto.
 
 ---
 
@@ -1040,8 +1072,8 @@ Resultado: el plan contiene todos los elementos obligatorios y recomendados del 
 | §7.6 | Requisitos de entorno | Integrado | §5.4 | Ídem. |
 | §7.7 | Informe de preparación de datos | **Sustituido** | — | Los datos sintéticos se crean dentro de las pruebas y los reales están versionados; CP-35 y CP-36 verifican los reales. |
 | §7.8 | Informe de preparación del entorno | **Sustituido** | Hito H2, CP-32 | La instalación limpia de CP-32 demuestra que el entorno está listo. |
-| §7.9–7.10 | Resultados reales y resultado de la prueba | Aplicado | Anexo A.2 | — |
-| §7.11 | Registro de ejecución | Aplicado | Anexo A.1 | — |
+| §7.9–7.10 | Resultados reales y resultado de la prueba | Aplicado | Anexo A.2, A.8 | — |
+| §7.11 | Registro de ejecución | Aplicado | Anexo A.1, A.8 | — |
 | §7.12 | Informe de incidencias | Aplicado | Anexo A.3, GitHub Issues | — |
 
 ### B.3 Técnicas declaradas (29119-3 §6.2.7.3; definiciones de 29119-4)
